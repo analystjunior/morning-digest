@@ -130,7 +130,6 @@ const DAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 interface StarterTemplate {
   id: string;
-  emoji: string;
   name: string;
   tagline: string;
   sections: Omit<WizardSection, "id">[];
@@ -139,7 +138,6 @@ interface StarterTemplate {
 const STARTER_TEMPLATES: StarterTemplate[] = [
   {
     id: "sports",
-    emoji: "🏆",
     name: "Sports Fan",
     tagline: "Scores, standings & today's games",
     sections: [
@@ -165,7 +163,6 @@ const STARTER_TEMPLATES: StarterTemplate[] = [
   },
   {
     id: "markets",
-    emoji: "📈",
     name: "Markets",
     tagline: "Pre-market snapshot & financial news",
     sections: [
@@ -192,7 +189,6 @@ const STARTER_TEMPLATES: StarterTemplate[] = [
   },
   {
     id: "politics",
-    emoji: "🗳️",
     name: "Politics",
     tagline: "What's happening in policy & government",
     sections: [
@@ -219,7 +215,6 @@ const STARTER_TEMPLATES: StarterTemplate[] = [
   },
   {
     id: "wildcard",
-    emoji: "✨",
     name: "Wildcard",
     tagline: "Curious, funny & unexpected",
     sections: [
@@ -382,10 +377,11 @@ function validateStep2(form: DeliveryForm): StepErrors {
 // ─── Shared styles ────────────────────────────────────────────────────────────
 
 const INPUT =
-  "w-full rounded-lg border border-zinc-700 bg-zinc-800/60 px-3.5 py-2.5 text-sm text-white placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-amber-400/50 focus:border-amber-400/50 transition";
-const INPUT_ERR = "border-red-500/60 focus:ring-red-500/40 focus:border-red-500/60";
-const LABEL = "block text-xs font-medium text-zinc-400 mb-1.5";
-const ERR = "mt-1.5 text-xs text-red-400";
+  "w-full rounded border px-3.5 py-2.5 text-sm placeholder:text-[#aaa] focus:outline-none focus:ring-1 focus:ring-[#1a1a1a] focus:border-[#1a1a1a] transition";
+const INPUT_STYLE = { borderColor: "#C8C5BC", backgroundColor: "#fff", color: "#1a1a1a" };
+const INPUT_ERR_STYLE = { borderColor: "#cc3333" };
+const LABEL = "block text-xs font-medium mb-1.5";
+const ERR = "mt-1.5 text-xs";
 
 // ─── Step 1: Sections ─────────────────────────────────────────────────────────
 
@@ -399,7 +395,26 @@ function SectionsStep({
   errors: StepErrors;
 }) {
   const [activeTemplate, setActiveTemplate] = useState<string | null>(null);
+  const [quotePreview, setQuotePreview] = useState<{ quote: string; author: string } | null>(null);
+  const [quoteFetching, setQuoteFetching] = useState(false);
+  const [quoteError, setQuoteError] = useState<string | null>(null);
   const addedKinds = new Set(sections.map((s) => s.kind));
+
+  async function fetchQuotePreview() {
+    setQuoteFetching(true);
+    setQuoteError(null);
+    setQuotePreview(null);
+    try {
+      const res = await fetch("/api/quote");
+      if (!res.ok) throw new Error("Request failed");
+      const data = await res.json() as { quote: string; author: string };
+      setQuotePreview(data);
+    } catch {
+      setQuoteError("Couldn't load a sample quote right now. Try again.");
+    } finally {
+      setQuoteFetching(false);
+    }
+  }
 
   function applyTemplate(template: StarterTemplate) {
     setActiveTemplate(template.id);
@@ -413,7 +428,6 @@ function SectionsStep({
 
   function add(kind: SectionKind) {
     if (addedKinds.has(kind)) return;
-    // Adding a section manually diverges from the template
     setActiveTemplate(null);
     const opt = SECTION_OPTIONS.find((o) => o.kind === kind)!;
     setSections((prev) => [
@@ -436,15 +450,20 @@ function SectionsStep({
   return (
     <div className="space-y-8">
       <div>
-        <h2 className="text-xl font-semibold text-white mb-1">Choose your sections</h2>
-        <p className="text-sm text-zinc-400">
+        <h2
+          className="text-xl font-semibold mb-1"
+          style={{ color: "#1a1a1a", fontFamily: "var(--font-playfair), serif" }}
+        >
+          Choose your sections
+        </h2>
+        <p className="text-sm" style={{ color: "#555" }}>
           Start from a template or build your digest section by section.
         </p>
       </div>
 
-      {/* ── Starter templates ─────────────────────────────────────────────── */}
+      {/* Starter templates */}
       <div className="space-y-3">
-        <p className="text-xs font-semibold uppercase tracking-widest text-zinc-500">
+        <p className="text-xs font-semibold uppercase tracking-widest" style={{ color: "#888" }}>
           Quick-start templates
         </p>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
@@ -455,31 +474,37 @@ function SectionsStep({
                 key={tpl.id}
                 type="button"
                 onClick={() => applyTemplate(tpl)}
-                className={`relative flex flex-col items-start gap-2 rounded-xl border px-4 py-4 text-left transition-all duration-150 ${
-                  active
-                    ? "border-amber-400/60 bg-amber-400/8 ring-1 ring-amber-400/30"
-                    : "border-zinc-700 bg-zinc-900/50 hover:border-zinc-500 hover:bg-zinc-800"
-                }`}
+                className="relative flex flex-col items-start gap-2 rounded border px-4 py-4 text-left transition-all duration-150"
+                style={{
+                  borderColor: active ? "#1a1a1a" : "#C8C5BC",
+                  backgroundColor: active ? "rgba(26,26,26,0.05)" : "#fff",
+                  boxShadow: active ? "0 0 0 1px rgba(26,26,26,0.15)" : "none",
+                }}
               >
-                <span className="text-xl leading-none" aria-hidden="true">
-                  {tpl.emoji}
-                </span>
-                <span className={`text-sm font-semibold leading-snug ${active ? "text-amber-400" : "text-white"}`}>
+                <span
+                  className="text-sm font-semibold leading-snug"
+                  style={{ color: active ? "#1a1a1a" : "#1a1a1a" }}
+                >
                   {tpl.name}
                 </span>
-                <span className="text-xs text-zinc-500 leading-snug">
+                <span className="text-xs leading-snug" style={{ color: "#888" }}>
                   {tpl.tagline}
                 </span>
-                {/* Section count pill */}
-                <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full border ${
-                  active
-                    ? "border-amber-400/30 text-amber-400 bg-amber-400/10"
-                    : "border-zinc-700 text-zinc-600"
-                }`}>
+                <span
+                  className="text-[10px] font-medium px-1.5 py-0.5 rounded-full border"
+                  style={{
+                    borderColor: active ? "#1a1a1a" : "#C8C5BC",
+                    color: active ? "#1a1a1a" : "#888",
+                    backgroundColor: active ? "rgba(26,26,26,0.06)" : "transparent",
+                  }}
+                >
                   {tpl.sections.length} sections
                 </span>
                 {active && (
-                  <span className="absolute top-2.5 right-2.5 flex items-center justify-center w-4 h-4 rounded-full bg-amber-400/20 text-amber-400">
+                  <span
+                    className="absolute top-2.5 right-2.5 flex items-center justify-center w-4 h-4 rounded-full"
+                    style={{ backgroundColor: "rgba(26,26,26,0.12)", color: "#1a1a1a" }}
+                  >
                     <svg xmlns="http://www.w3.org/2000/svg" width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                       <polyline points="20 6 9 17 4 12" />
                     </svg>
@@ -491,12 +516,15 @@ function SectionsStep({
         </div>
 
         {activeTemplate && (
-          <p className="text-xs text-zinc-500">
+          <p className="text-xs" style={{ color: "#888" }}>
             Template applied.{" "}
             <button
               type="button"
               onClick={clearTemplate}
-              className="text-zinc-400 underline underline-offset-2 hover:text-white transition-colors"
+              className="underline underline-offset-2 transition-colors"
+              style={{ color: "#555" }}
+              onMouseEnter={e => (e.currentTarget.style.color = "#1a1a1a")}
+              onMouseLeave={e => (e.currentTarget.style.color = "#555")}
             >
               Clear and start from scratch
             </button>
@@ -504,14 +532,14 @@ function SectionsStep({
         )}
       </div>
 
-      {/* ── Divider ───────────────────────────────────────────────────────── */}
+      {/* Divider */}
       <div className="flex items-center gap-3">
-        <span className="flex-1 h-px bg-zinc-800" aria-hidden="true" />
-        <span className="text-xs text-zinc-600 shrink-0">or add sections manually</span>
-        <span className="flex-1 h-px bg-zinc-800" aria-hidden="true" />
+        <span className="flex-1 h-px" style={{ backgroundColor: "#D5D2CA" }} aria-hidden="true" />
+        <span className="text-xs shrink-0" style={{ color: "#888" }}>or add sections manually</span>
+        <span className="flex-1 h-px" style={{ backgroundColor: "#D5D2CA" }} aria-hidden="true" />
       </div>
 
-      {/* ── Section type picker ───────────────────────────────────────────── */}
+      {/* Section type picker */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
         {SECTION_OPTIONS.map(({ kind, label, hint }) => {
           const added = addedKinds.has(kind);
@@ -521,17 +549,22 @@ function SectionsStep({
               type="button"
               onClick={() => add(kind)}
               disabled={added}
-              className={`relative flex flex-col items-start gap-2 rounded-xl border px-3.5 py-3.5 text-left text-sm transition-all duration-150 ${
-                added
-                  ? "border-amber-400/40 bg-amber-400/5 text-amber-400 cursor-default"
-                  : "border-zinc-700 bg-zinc-900/50 text-zinc-300 hover:border-zinc-500 hover:bg-zinc-800 cursor-pointer"
-              }`}
+              className="relative flex flex-col items-start gap-2 rounded border px-3.5 py-3.5 text-left text-sm transition-all duration-150"
+              style={{
+                borderColor: added ? "#1a1a1a" : "#C8C5BC",
+                backgroundColor: added ? "rgba(26,26,26,0.05)" : "#fff",
+                color: added ? "#1a1a1a" : "#555",
+                cursor: added ? "default" : "pointer",
+              }}
             >
               <SectionIcon kind={kind} />
               <span className="font-medium leading-none">{label}</span>
-              <span className="text-xs text-zinc-500 leading-snug">{hint}</span>
+              <span className="text-xs leading-snug" style={{ color: "#888" }}>{hint}</span>
               {added && (
-                <span className="absolute top-2.5 right-2.5 flex items-center justify-center w-4 h-4 rounded-full bg-amber-400/20">
+                <span
+                  className="absolute top-2.5 right-2.5 flex items-center justify-center w-4 h-4 rounded-full"
+                  style={{ backgroundColor: "rgba(26,26,26,0.12)" }}
+                >
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
                     width="9"
@@ -554,13 +587,13 @@ function SectionsStep({
       </div>
 
       {errors.sections && (
-        <p className={ERR + " -mt-4"}>{errors.sections}</p>
+        <p className={ERR + " -mt-4"} style={{ color: "#cc3333" }}>{errors.sections}</p>
       )}
 
       {/* Added sections */}
       {sections.length > 0 && (
         <div className="space-y-3">
-          <p className="text-xs font-medium tracking-widest uppercase text-zinc-600">
+          <p className="text-xs font-medium tracking-widest uppercase" style={{ color: "#888" }}>
             Your sections — {sections.length} added
           </p>
 
@@ -569,13 +602,14 @@ function SectionsStep({
             return (
               <div
                 key={section.id}
-                className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-5 space-y-4"
+                className="rounded border p-5 space-y-4"
+                style={{ borderColor: "#C8C5BC", backgroundColor: "#fff" }}
               >
                 {/* Section header */}
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-amber-400">
+                  <div className="flex items-center gap-2" style={{ color: "#555" }}>
                     <SectionIcon kind={section.kind} size={15} />
-                    <span className="text-xs font-medium uppercase tracking-wider text-zinc-500">
+                    <span className="text-xs font-medium uppercase tracking-wider" style={{ color: "#888" }}>
                       {opt.label}
                     </span>
                   </div>
@@ -583,7 +617,10 @@ function SectionsStep({
                     type="button"
                     onClick={() => remove(section.id)}
                     aria-label={`Remove ${section.title}`}
-                    className="p-1 rounded text-zinc-600 hover:text-red-400 transition-colors"
+                    className="p-1 rounded transition-colors"
+                    style={{ color: "#888" }}
+                    onMouseEnter={e => (e.currentTarget.style.color = "#cc3333")}
+                    onMouseLeave={e => (e.currentTarget.style.color = "#888")}
                   >
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
@@ -605,26 +642,28 @@ function SectionsStep({
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className={LABEL}>
-                      Section title <span className="text-amber-500">*</span>
+                    <label className={LABEL} style={{ color: "#555" }}>
+                      Section title <span style={{ color: "#cc3333" }}>*</span>
                     </label>
                     <input
-                      className={`${INPUT} ${errors[`title_${i}`] ? INPUT_ERR : ""}`}
+                      className={INPUT}
+                      style={{ ...INPUT_STYLE, ...(errors[`title_${i}`] ? INPUT_ERR_STYLE : {}) }}
                       value={section.title}
                       onChange={(e) => update(section.id, "title", e.target.value)}
                       placeholder="Section title"
                     />
                     {errors[`title_${i}`] && (
-                      <p className={ERR}>{errors[`title_${i}`]}</p>
+                      <p className={ERR} style={{ color: "#cc3333" }}>{errors[`title_${i}`]}</p>
                     )}
                   </div>
                   <div>
-                    <label className={LABEL}>
+                    <label className={LABEL} style={{ color: "#555" }}>
                       Source{" "}
-                      <span className="text-zinc-600">(optional)</span>
+                      <span style={{ color: "#aaa" }}>(optional)</span>
                     </label>
                     <input
                       className={INPUT}
+                      style={INPUT_STYLE}
                       value={section.source}
                       onChange={(e) => update(section.id, "source", e.target.value)}
                       placeholder={opt.sourcePlaceholder}
@@ -633,12 +672,13 @@ function SectionsStep({
                 </div>
 
                 <div>
-                  <label className={LABEL}>
+                  <label className={LABEL} style={{ color: "#555" }}>
                     Instructions{" "}
-                    <span className="text-zinc-600">(optional)</span>
+                    <span style={{ color: "#aaa" }}>(optional)</span>
                   </label>
                   <textarea
                     className={`${INPUT} resize-none h-[4.5rem]`}
+                    style={INPUT_STYLE}
                     value={section.instructions}
                     onChange={(e) =>
                       update(section.id, "instructions", e.target.value)
@@ -649,6 +689,83 @@ function SectionsStep({
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* Quote preview — shown when a Daily Quote section is added */}
+      {addedKinds.has("quote") && (
+        <div
+          className="rounded border p-5 space-y-4"
+          style={{ borderColor: "#C8C5BC", backgroundColor: "#fff" }}
+        >
+          <div className="flex items-center justify-between">
+            <p className="text-xs font-semibold uppercase tracking-widest" style={{ color: "#888" }}>
+              Daily Quote preview
+            </p>
+            <button
+              type="button"
+              onClick={fetchQuotePreview}
+              disabled={quoteFetching}
+              className="inline-flex items-center gap-2 rounded text-xs font-medium px-3.5 py-1.5 transition-opacity hover:opacity-80 disabled:opacity-50"
+              style={{ backgroundColor: "#1a1a1a", color: "#E8E6DF" }}
+            >
+              {quoteFetching ? (
+                <>
+                  <svg
+                    className="animate-spin"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="12"
+                    height="12"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden="true"
+                  >
+                    <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+                  </svg>
+                  Loading…
+                </>
+              ) : (
+                "Preview a sample quote"
+              )}
+            </button>
+          </div>
+
+          {quoteError && (
+            <p className="text-xs" style={{ color: "#cc3333" }}>{quoteError}</p>
+          )}
+
+          {quotePreview && (
+            <figure className="space-y-3 pt-1">
+              <blockquote>
+                <p
+                  className="text-lg leading-relaxed"
+                  style={{
+                    fontFamily: "var(--font-playfair), serif",
+                    fontStyle: "italic",
+                    color: "#1a1a1a",
+                  }}
+                >
+                  &ldquo;{quotePreview.quote}&rdquo;
+                </p>
+              </blockquote>
+              <figcaption
+                className="text-sm"
+                style={{ fontFamily: "var(--font-inter), sans-serif", color: "#888" }}
+              >
+                — {quotePreview.author}
+              </figcaption>
+            </figure>
+          )}
+
+          {!quotePreview && !quoteError && !quoteFetching && (
+            <p className="text-xs" style={{ color: "#aaa" }}>
+              Click the button to see what a generated quote looks like in your digest.
+            </p>
+          )}
         </div>
       )}
     </div>
@@ -690,8 +807,13 @@ function DeliveryStep({
   return (
     <div className="space-y-8">
       <div>
-        <h2 className="text-xl font-semibold text-white mb-1">Delivery settings</h2>
-        <p className="text-sm text-zinc-400">
+        <h2
+          className="text-xl font-semibold mb-1"
+          style={{ color: "#1a1a1a", fontFamily: "var(--font-playfair), serif" }}
+        >
+          Delivery settings
+        </h2>
+        <p className="text-sm" style={{ color: "#555" }}>
           Choose when and how you&apos;d like to receive your digest.
         </p>
       </div>
@@ -699,23 +821,25 @@ function DeliveryStep({
       {/* Time + timezone */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
         <div>
-          <label className={LABEL}>
-            Delivery time <span className="text-amber-500">*</span>
+          <label className={LABEL} style={{ color: "#555" }}>
+            Delivery time <span style={{ color: "#cc3333" }}>*</span>
           </label>
           <input
             type="time"
-            className={`${INPUT} [color-scheme:dark] ${errors.time ? INPUT_ERR : ""}`}
+            className={INPUT}
+            style={{ ...INPUT_STYLE, ...(errors.time ? INPUT_ERR_STYLE : {}) }}
             value={form.time}
             onChange={(e) => setForm((p) => ({ ...p, time: e.target.value }))}
           />
-          {errors.time && <p className={ERR}>{errors.time}</p>}
+          {errors.time && <p className={ERR} style={{ color: "#cc3333" }}>{errors.time}</p>}
         </div>
         <div>
-          <label className={LABEL}>
-            Timezone <span className="text-amber-500">*</span>
+          <label className={LABEL} style={{ color: "#555" }}>
+            Timezone <span style={{ color: "#cc3333" }}>*</span>
           </label>
           <select
-            className={`${INPUT} ${errors.timezone ? INPUT_ERR : ""}`}
+            className={INPUT}
+            style={{ ...INPUT_STYLE, ...(errors.timezone ? INPUT_ERR_STYLE : {}) }}
             value={form.timezone}
             onChange={(e) => setForm((p) => ({ ...p, timezone: e.target.value }))}
           >
@@ -726,14 +850,14 @@ function DeliveryStep({
               </option>
             ))}
           </select>
-          {errors.timezone && <p className={ERR}>{errors.timezone}</p>}
+          {errors.timezone && <p className={ERR} style={{ color: "#cc3333" }}>{errors.timezone}</p>}
         </div>
       </div>
 
       {/* Days of week */}
       <div>
-        <label className={LABEL}>
-          Delivery days <span className="text-amber-500">*</span>
+        <label className={LABEL} style={{ color: "#555" }}>
+          Delivery days <span style={{ color: "#cc3333" }}>*</span>
         </label>
         <div className="flex flex-wrap gap-2 mt-1">
           {DAY_LABELS.map((label, i) => {
@@ -743,24 +867,25 @@ function DeliveryStep({
                 key={label}
                 type="button"
                 onClick={() => toggleDay(i)}
-                className={`px-4 py-1.5 rounded-full text-sm font-medium border transition-colors duration-150 ${
-                  active
-                    ? "bg-amber-400/10 border-amber-400/50 text-amber-400"
-                    : "border-zinc-700 text-zinc-500 hover:border-zinc-500 hover:text-zinc-300"
-                }`}
+                className="px-4 py-1.5 rounded text-sm font-medium border transition-colors duration-150"
+                style={{
+                  borderColor: active ? "#1a1a1a" : "#C8C5BC",
+                  backgroundColor: active ? "rgba(26,26,26,0.06)" : "#fff",
+                  color: active ? "#1a1a1a" : "#888",
+                }}
               >
                 {label}
               </button>
             );
           })}
         </div>
-        {errors.days && <p className={ERR}>{errors.days}</p>}
+        {errors.days && <p className={ERR} style={{ color: "#cc3333" }}>{errors.days}</p>}
       </div>
 
       {/* Channel */}
       <div>
-        <label className={LABEL}>
-          Delivery channel <span className="text-amber-500">*</span>
+        <label className={LABEL} style={{ color: "#555" }}>
+          Delivery channel <span style={{ color: "#cc3333" }}>*</span>
         </label>
         <div className="grid grid-cols-3 gap-2.5 mt-1">
           {channels.map(({ value, label, hint }) => (
@@ -768,14 +893,15 @@ function DeliveryStep({
               key={value}
               type="button"
               onClick={() => setForm((p) => ({ ...p, channel: value }))}
-              className={`flex flex-col items-start gap-1.5 rounded-xl border px-4 py-4 text-left transition-all duration-150 ${
-                form.channel === value
-                  ? "border-amber-400/50 bg-amber-400/5 text-white"
-                  : "border-zinc-700 text-zinc-400 hover:border-zinc-600 hover:text-zinc-200"
-              }`}
+              className="flex flex-col items-start gap-1.5 rounded border px-4 py-4 text-left transition-all duration-150"
+              style={{
+                borderColor: form.channel === value ? "#1a1a1a" : "#C8C5BC",
+                backgroundColor: form.channel === value ? "rgba(26,26,26,0.05)" : "#fff",
+                color: form.channel === value ? "#1a1a1a" : "#555",
+              }}
             >
               <span className="text-sm font-semibold">{label}</span>
-              <span className="text-xs text-zinc-500 leading-snug">{hint}</span>
+              <span className="text-xs leading-snug" style={{ color: "#888" }}>{hint}</span>
             </button>
           ))}
         </div>
@@ -786,34 +912,36 @@ function DeliveryStep({
         <div className="space-y-4">
           {needsEmail && (
             <div>
-              <label className={LABEL}>
-                Email address <span className="text-amber-500">*</span>
+              <label className={LABEL} style={{ color: "#555" }}>
+                Email address <span style={{ color: "#cc3333" }}>*</span>
               </label>
               <input
                 type="email"
-                className={`${INPUT} ${errors.email ? INPUT_ERR : ""}`}
+                className={INPUT}
+                style={{ ...INPUT_STYLE, ...(errors.email ? INPUT_ERR_STYLE : {}) }}
                 placeholder="you@example.com"
                 value={form.email}
                 onChange={(e) => setForm((p) => ({ ...p, email: e.target.value }))}
                 autoComplete="email"
               />
-              {errors.email && <p className={ERR}>{errors.email}</p>}
+              {errors.email && <p className={ERR} style={{ color: "#cc3333" }}>{errors.email}</p>}
             </div>
           )}
           {needsSms && (
             <div>
-              <label className={LABEL}>
-                Phone number <span className="text-amber-500">*</span>
+              <label className={LABEL} style={{ color: "#555" }}>
+                Phone number <span style={{ color: "#cc3333" }}>*</span>
               </label>
               <input
                 type="tel"
-                className={`${INPUT} ${errors.phone ? INPUT_ERR : ""}`}
+                className={INPUT}
+                style={{ ...INPUT_STYLE, ...(errors.phone ? INPUT_ERR_STYLE : {}) }}
                 placeholder="+1 (555) 000-0000"
                 value={form.phone}
                 onChange={(e) => setForm((p) => ({ ...p, phone: e.target.value }))}
                 autoComplete="tel"
               />
-              {errors.phone && <p className={ERR}>{errors.phone}</p>}
+              {errors.phone && <p className={ERR} style={{ color: "#cc3333" }}>{errors.phone}</p>}
             </div>
           )}
         </div>
@@ -858,54 +986,65 @@ function PreviewStep({
   return (
     <div className="space-y-8">
       <div>
-        <h2 className="text-xl font-semibold text-white mb-1">Looks good?</h2>
-        <p className="text-sm text-zinc-400">
+        <h2
+          className="text-xl font-semibold mb-1"
+          style={{ color: "#1a1a1a", fontFamily: "var(--font-playfair), serif" }}
+        >
+          Looks good?
+        </h2>
+        <p className="text-sm" style={{ color: "#555" }}>
           Review your digest below, then launch when you&apos;re ready.
         </p>
       </div>
 
       {/* Digest preview card */}
-      <div className="rounded-2xl border border-zinc-800 overflow-hidden">
+      <div className="rounded border overflow-hidden" style={{ borderColor: "#C8C5BC" }}>
         {/* Mock email header */}
-        <div className="bg-zinc-900 border-b border-zinc-800 px-6 py-4 space-y-1">
-          <div className="flex items-center gap-2 text-xs text-zinc-500">
-            <span className="text-amber-400 text-[10px]">●</span>
-            <span>Briefd · Daily Digest</span>
+        <div className="px-6 py-4 space-y-1" style={{ backgroundColor: "#DEDAD2", borderBottom: "1px solid #C8C5BC" }}>
+          <div className="flex items-center gap-2 text-xs" style={{ color: "#888" }}>
+            <span>The Paper Route · Daily Digest</span>
             <span className="ml-auto">{fmt12(delivery.time)}</span>
           </div>
-          <p className="text-sm font-semibold text-white">
+          <p className="text-sm font-semibold" style={{ color: "#1a1a1a" }}>
             Good morning — here&apos;s your briefing
           </p>
         </div>
 
         {/* Section previews */}
-        <div className="divide-y divide-zinc-800/50 bg-zinc-900/40">
+        <div style={{ backgroundColor: "rgba(255,255,255,0.5)" }}>
           {sections.map((s, i) => (
-            <div key={s.id} className="flex items-start gap-4 px-6 py-4">
-              <span className="flex-shrink-0 mt-0.5 flex items-center justify-center w-8 h-8 rounded-lg bg-zinc-800 text-amber-400/70">
+            <div
+              key={s.id}
+              className="flex items-start gap-4 px-6 py-4"
+              style={{ borderBottom: i < sections.length - 1 ? "1px solid #D5D2CA" : "none" }}
+            >
+              <span
+                className="flex-shrink-0 mt-0.5 flex items-center justify-center w-8 h-8 rounded"
+                style={{ backgroundColor: "#DEDAD2", color: "#555" }}
+              >
                 <SectionIcon kind={s.kind} size={16} />
               </span>
               <div className="min-w-0 flex-1">
-                <p className="text-sm font-medium text-white leading-snug">
+                <p className="text-sm font-medium leading-snug" style={{ color: "#1a1a1a" }}>
                   {s.title}
                 </p>
                 {s.source && (
-                  <p className="text-xs text-zinc-500 mt-0.5">
+                  <p className="text-xs mt-0.5" style={{ color: "#888" }}>
                     Source: {s.source}
                   </p>
                 )}
                 {s.instructions && (
-                  <p className="text-xs text-zinc-600 mt-0.5 italic leading-snug">
+                  <p className="text-xs mt-0.5 italic leading-snug" style={{ color: "#888" }}>
                     &ldquo;{s.instructions}&rdquo;
                   </p>
                 )}
                 {/* Mock content bar */}
                 <div className="mt-2.5 space-y-1.5">
-                  <div className="h-2 rounded-full bg-zinc-800 w-4/5" />
-                  <div className="h-2 rounded-full bg-zinc-800 w-3/5" />
+                  <div className="h-2 rounded-full w-4/5" style={{ backgroundColor: "#C8C5BC" }} />
+                  <div className="h-2 rounded-full w-3/5" style={{ backgroundColor: "#C8C5BC" }} />
                 </div>
               </div>
-              <span className="ml-auto text-xs text-zinc-700 shrink-0">
+              <span className="ml-auto text-xs shrink-0" style={{ color: "#aaa" }}>
                 #{i + 1}
               </span>
             </div>
@@ -914,15 +1053,15 @@ function PreviewStep({
       </div>
 
       {/* Delivery summary */}
-      <div className="rounded-xl border border-zinc-800 bg-zinc-900/40 px-6 py-5">
-        <p className="text-xs font-medium text-zinc-600 uppercase tracking-widest mb-4">
+      <div className="rounded border px-6 py-5" style={{ borderColor: "#C8C5BC", backgroundColor: "rgba(255,255,255,0.5)" }}>
+        <p className="text-xs font-medium uppercase tracking-widest mb-4" style={{ color: "#888" }}>
           Delivery summary
         </p>
         <dl className="space-y-3">
           {deliverySummary.map(({ label, value }) => (
             <div key={label} className="flex items-start justify-between gap-4 text-sm">
-              <dt className="text-zinc-500 shrink-0">{label}</dt>
-              <dd className="text-zinc-200 text-right">{value}</dd>
+              <dt style={{ color: "#888" }}>{label}</dt>
+              <dd className="text-right" style={{ color: "#1a1a1a" }}>{value}</dd>
             </div>
           ))}
         </dl>
@@ -943,13 +1082,12 @@ function StepIndicator({ current }: { current: number }) {
           <div key={n} className="flex items-center gap-0">
             <div className="flex flex-col items-center gap-1.5">
               <div
-                className={`flex items-center justify-center w-8 h-8 rounded-full text-xs font-semibold transition-colors duration-200 ${
-                  done
-                    ? "bg-amber-400 text-zinc-900"
-                    : active
-                    ? "border-2 border-amber-400 text-amber-400 bg-transparent"
-                    : "border border-zinc-700 text-zinc-600 bg-transparent"
-                }`}
+                className="flex items-center justify-center w-8 h-8 rounded-full text-xs font-semibold transition-colors duration-200"
+                style={{
+                  backgroundColor: done ? "#1a1a1a" : "transparent",
+                  color: done ? "#E8E6DF" : active ? "#1a1a1a" : "#aaa",
+                  border: done ? "none" : active ? "2px solid #1a1a1a" : "1px solid #C8C5BC",
+                }}
               >
                 {done ? (
                   <svg
@@ -971,9 +1109,8 @@ function StepIndicator({ current }: { current: number }) {
                 )}
               </div>
               <span
-                className={`text-xs font-medium ${
-                  active ? "text-amber-400" : done ? "text-zinc-400" : "text-zinc-600"
-                }`}
+                className="text-xs font-medium"
+                style={{ color: active ? "#1a1a1a" : done ? "#555" : "#aaa" }}
               >
                 {label}
               </span>
@@ -982,9 +1119,8 @@ function StepIndicator({ current }: { current: number }) {
             {/* Connector line */}
             {idx < STEPS.length - 1 && (
               <div
-                className={`h-px w-16 sm:w-24 mb-5 mx-2 transition-colors duration-300 ${
-                  n < current ? "bg-amber-400/50" : "bg-zinc-800"
-                }`}
+                className="h-px w-16 sm:w-24 mb-5 mx-2 transition-colors duration-300"
+                style={{ backgroundColor: n < current ? "#555" : "#D5D2CA" }}
               />
             )}
           </div>
@@ -999,7 +1135,10 @@ function StepIndicator({ current }: { current: number }) {
 function SuccessScreen({ deliveryTime }: { deliveryTime: string }) {
   return (
     <div className="flex flex-col items-center justify-center text-center py-12 space-y-6">
-      <div className="flex items-center justify-center w-16 h-16 rounded-full bg-amber-400/10 text-amber-400">
+      <div
+        className="flex items-center justify-center w-16 h-16 rounded-full"
+        style={{ backgroundColor: "rgba(26,26,26,0.08)", color: "#1a1a1a" }}
+      >
         <svg
           xmlns="http://www.w3.org/2000/svg"
           width="28"
@@ -1017,16 +1156,22 @@ function SuccessScreen({ deliveryTime }: { deliveryTime: string }) {
         </svg>
       </div>
       <div className="space-y-2">
-        <h2 className="text-2xl font-semibold text-white">You&apos;re all set.</h2>
-        <p className="text-zinc-400 max-w-sm">
+        <h2
+          className="text-2xl font-semibold"
+          style={{ color: "#1a1a1a", fontFamily: "var(--font-playfair), serif" }}
+        >
+          You&apos;re all set.
+        </h2>
+        <p className="max-w-sm" style={{ color: "#555" }}>
           Your first digest will arrive at{" "}
-          <span className="text-amber-400 font-medium">{fmt12(deliveryTime)}</span>{" "}
+          <span className="font-semibold" style={{ color: "#1a1a1a" }}>{fmt12(deliveryTime)}</span>{" "}
           tomorrow morning. We&apos;ll handle the rest.
         </p>
       </div>
       <Link
         href="/dashboard"
-        className="mt-2 inline-flex items-center gap-2 rounded-full bg-amber-400 text-zinc-900 font-semibold text-sm px-7 py-3 hover:bg-amber-300 transition-colors duration-150"
+        className="mt-2 inline-flex items-center gap-2 rounded font-semibold text-sm px-7 py-3 transition-opacity hover:opacity-80 duration-150"
+        style={{ backgroundColor: "#1a1a1a", color: "#E8E6DF" }}
       >
         Go to dashboard
         <svg
@@ -1072,7 +1217,6 @@ export default function SetupPage() {
 
     if (Object.keys(errs).length > 0) {
       setErrors(errs);
-      // Scroll to first error
       setTimeout(() => {
         document.querySelector("[data-error]")?.scrollIntoView({
           behavior: "smooth",
@@ -1092,27 +1236,32 @@ export default function SetupPage() {
   }
 
   function confirm() {
-    // No real API yet — simulate submit
     setSubmitted(true);
   }
 
   return (
-    <div className="min-h-screen bg-[#0c0c0e] font-[family-name:var(--font-geist-sans)]">
+    <div
+      className="min-h-screen"
+      style={{ backgroundColor: "#E8E6DF", color: "#1a1a1a", fontFamily: "var(--font-inter), sans-serif" }}
+    >
       {/* Nav */}
-      <nav className="flex items-center justify-between px-6 py-5 sm:px-10 max-w-3xl mx-auto">
-        <Link href="/" className="text-base font-semibold tracking-tight">
-          <span className="text-amber-400">●</span>
-          <span className="ml-2 text-white">Briefd</span>
+      <nav className="flex items-center justify-between px-6 py-5 sm:px-12 max-w-3xl mx-auto">
+        <Link
+          href="/"
+          className="text-base font-semibold tracking-tight"
+          style={{ fontFamily: "var(--font-playfair), serif", color: "#1a1a1a" }}
+        >
+          The Paper Route
         </Link>
         {!submitted && (
-          <span className="text-xs text-zinc-600">
+          <span className="text-xs" style={{ color: "#888" }}>
             Step {step} of {STEPS.length}
           </span>
         )}
       </nav>
 
-      {/* Wizard card */}
-      <main className="px-6 py-8 sm:px-10 pb-24 max-w-3xl mx-auto">
+      {/* Wizard */}
+      <main className="px-6 py-8 sm:px-12 pb-24 max-w-3xl mx-auto">
         {submitted ? (
           <SuccessScreen deliveryTime={delivery.time} />
         ) : (
@@ -1141,12 +1290,18 @@ export default function SetupPage() {
             </div>
 
             {/* Navigation */}
-            <div className="flex items-center justify-between mt-10 pt-6 border-t border-zinc-800">
+            <div
+              className="flex items-center justify-between mt-10 pt-6"
+              style={{ borderTop: "1px solid #D5D2CA" }}
+            >
               {step > 1 ? (
                 <button
                   type="button"
                   onClick={retreat}
-                  className="inline-flex items-center gap-2 text-sm text-zinc-400 hover:text-white transition-colors"
+                  className="inline-flex items-center gap-2 text-sm transition-colors"
+                  style={{ color: "#888" }}
+                  onMouseEnter={e => (e.currentTarget.style.color = "#1a1a1a")}
+                  onMouseLeave={e => (e.currentTarget.style.color = "#888")}
                 >
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
@@ -1167,9 +1322,12 @@ export default function SetupPage() {
               ) : (
                 <Link
                   href="/"
-                  className="text-sm text-zinc-600 hover:text-zinc-400 transition-colors"
+                  className="text-sm transition-colors"
+                  style={{ color: "#888" }}
+                  onMouseEnter={e => (e.currentTarget.style.color = "#1a1a1a")}
+                  onMouseLeave={e => (e.currentTarget.style.color = "#888")}
                 >
-                  ← Home
+                  &larr; Home
                 </Link>
               )}
 
@@ -1177,7 +1335,8 @@ export default function SetupPage() {
                 <button
                   type="button"
                   onClick={advance}
-                  className="inline-flex items-center gap-2 rounded-full bg-amber-400 text-zinc-900 font-semibold text-sm px-7 py-2.5 hover:bg-amber-300 active:bg-amber-500 transition-colors duration-150"
+                  className="inline-flex items-center gap-2 rounded font-semibold text-sm px-7 py-2.5 transition-opacity hover:opacity-80 active:opacity-70 duration-150"
+                  style={{ backgroundColor: "#1a1a1a", color: "#E8E6DF" }}
                 >
                   Continue
                   <svg
@@ -1199,9 +1358,10 @@ export default function SetupPage() {
                 <button
                   type="button"
                   onClick={confirm}
-                  className="inline-flex items-center gap-2 rounded-full bg-amber-400 text-zinc-900 font-semibold text-sm px-7 py-2.5 hover:bg-amber-300 active:bg-amber-500 transition-colors duration-150"
+                  className="inline-flex items-center gap-2 rounded font-semibold text-sm px-7 py-2.5 transition-opacity hover:opacity-80 active:opacity-70 duration-150"
+                  style={{ backgroundColor: "#1a1a1a", color: "#E8E6DF" }}
                 >
-                  Launch Briefd
+                  Launch The Paper Route
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
                     width="14"

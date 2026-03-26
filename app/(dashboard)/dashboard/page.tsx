@@ -93,13 +93,13 @@ const MOCK_DIGEST_CONTENT: Record<string, React.ReactNode> = {
   s1: (
     <div className="space-y-3">
       <div className="flex items-end gap-3">
-        <span className="text-4xl font-light text-white">68°</span>
-        <div className="pb-1 text-sm text-zinc-400 leading-snug">
-          <p className="font-medium text-zinc-200">Partly Cloudy</p>
+        <span className="text-4xl font-light" style={{ color: "#1a1a1a" }}>68°</span>
+        <div className="pb-1 text-sm leading-snug" style={{ color: "#555" }}>
+          <p className="font-medium" style={{ color: "#1a1a1a" }}>Partly Cloudy</p>
           <p>New York, NY</p>
         </div>
       </div>
-      <div className="grid grid-cols-3 gap-3 text-xs text-zinc-400">
+      <div className="grid grid-cols-3 gap-3 text-xs" style={{ color: "#888" }}>
         {[
           { label: "High", value: "72°" },
           { label: "Low", value: "58°" },
@@ -108,13 +108,13 @@ const MOCK_DIGEST_CONTENT: Record<string, React.ReactNode> = {
           { label: "UV Index", value: "4 · Moderate" },
           { label: "Sunrise", value: "6:48 AM" },
         ].map(({ label, value }) => (
-          <div key={label} className="rounded-lg bg-zinc-800/60 px-3 py-2">
-            <p className="text-zinc-500 mb-0.5">{label}</p>
-            <p className="text-zinc-200 font-medium">{value}</p>
+          <div key={label} className="px-3 py-2" style={{ backgroundColor: "#DEDAD2", borderRadius: "6px" }}>
+            <p className="mb-0.5" style={{ color: "#888" }}>{label}</p>
+            <p className="font-medium" style={{ color: "#1a1a1a" }}>{value}</p>
           </div>
         ))}
       </div>
-      <p className="text-xs text-zinc-500">
+      <p className="text-xs" style={{ color: "#888" }}>
         Afternoon: Clearing up. Evening: Clear skies, 61°.
       </p>
     </div>
@@ -145,11 +145,12 @@ const MOCK_DIGEST_CONTENT: Record<string, React.ReactNode> = {
       ].map(({ headline, source, ago }) => (
         <div
           key={headline}
-          className="flex items-start gap-3 py-3 border-b border-zinc-800/50 last:border-0"
+          className="flex items-start gap-3 py-3 last:border-0"
+          style={{ borderBottom: "1px solid #D5D2CA" }}
         >
           <div className="flex-1 min-w-0">
-            <p className="text-sm text-zinc-100 leading-snug">{headline}</p>
-            <p className="text-xs text-zinc-500 mt-1">
+            <p className="text-sm leading-snug" style={{ color: "#1a1a1a" }}>{headline}</p>
+            <p className="text-xs mt-1" style={{ color: "#888" }}>
               {source} · {ago}
             </p>
           </div>
@@ -160,18 +161,24 @@ const MOCK_DIGEST_CONTENT: Record<string, React.ReactNode> = {
   s3: (
     <div className="space-y-1.5">
       {[
-        { time: "9:00 AM", title: "Team standup", where: "Google Meet", color: "bg-blue-400" },
-        { time: "11:00 AM", title: "Design review — Q2 roadmap", where: "Conference Room B", color: "bg-violet-400" },
-        { time: "1:00 PM", title: "Lunch with Sarah Chen", where: "Nobu Downtown", color: "bg-amber-400" },
-        { time: "3:30 PM", title: "Product review", where: "Zoom", color: "bg-emerald-400" },
-        { time: "5:00 PM", title: "Weekly 1:1 with manager", where: "Zoom", color: "bg-rose-400" },
-      ].map(({ time, title, where, color }) => (
-        <div key={title} className="flex items-center gap-3 rounded-lg px-3 py-2.5 hover:bg-zinc-800/40">
-          <span className="text-xs text-zinc-500 w-16 shrink-0 tabular-nums">{time}</span>
-          <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${color}`} aria-hidden="true" />
+        { time: "9:00 AM", title: "Team standup", where: "Google Meet" },
+        { time: "11:00 AM", title: "Design review — Q2 roadmap", where: "Conference Room B" },
+        { time: "1:00 PM", title: "Lunch with Sarah Chen", where: "Nobu Downtown" },
+        { time: "3:30 PM", title: "Product review", where: "Zoom" },
+        { time: "5:00 PM", title: "Weekly 1:1 with manager", where: "Zoom" },
+      ].map(({ time, title, where }) => (
+        <div
+          key={title}
+          className="flex items-center gap-3 px-3 py-2.5 rounded"
+          style={{ transition: "background 150ms" }}
+          onMouseEnter={e => (e.currentTarget.style.backgroundColor = "#D5D2CA")}
+          onMouseLeave={e => (e.currentTarget.style.backgroundColor = "transparent")}
+        >
+          <span className="text-xs w-16 shrink-0 tabular-nums" style={{ color: "#888" }}>{time}</span>
+          <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: "#555" }} aria-hidden="true" />
           <div className="min-w-0">
-            <p className="text-sm text-zinc-100 leading-snug truncate">{title}</p>
-            <p className="text-xs text-zinc-600">{where}</p>
+            <p className="text-sm leading-snug truncate" style={{ color: "#1a1a1a" }}>{title}</p>
+            <p className="text-xs" style={{ color: "#888" }}>{where}</p>
           </div>
         </div>
       ))}
@@ -186,21 +193,22 @@ const MOCK_DIGEST_CONTENT: Record<string, React.ReactNode> = {
       ].map(({ ticker, name, price, change, pct, up }) => (
         <div
           key={ticker}
-          className="flex items-center justify-between rounded-lg bg-zinc-800/40 px-4 py-3"
+          className="flex items-center justify-between px-4 py-3"
+          style={{ backgroundColor: "#DEDAD2", borderRadius: "6px" }}
         >
           <div>
-            <p className="text-sm font-semibold text-zinc-100">{ticker}</p>
-            <p className="text-xs text-zinc-500">{name}</p>
+            <p className="text-sm font-semibold" style={{ color: "#1a1a1a" }}>{ticker}</p>
+            <p className="text-xs" style={{ color: "#888" }}>{name}</p>
           </div>
           <div className="text-right">
-            <p className="text-sm font-medium text-zinc-100">${price}</p>
-            <p className={`text-xs font-medium ${up ? "text-emerald-400" : "text-red-400"}`}>
+            <p className="text-sm font-medium" style={{ color: "#1a1a1a" }}>${price}</p>
+            <p className="text-xs font-medium" style={{ color: up ? "#2d6a2d" : "#8b2222" }}>
               {change} ({pct})
             </p>
           </div>
         </div>
       ))}
-      <p className="text-xs text-zinc-600 pt-1">Prices as of market close · Tue, Mar 24</p>
+      <p className="text-xs pt-1" style={{ color: "#888" }}>Prices as of market close · Tue, Mar 24</p>
     </div>
   ),
 };
@@ -258,9 +266,12 @@ function Toggle({
       aria-checked={checked}
       aria-label={label}
       onClick={onChange}
-      className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-amber-400/50 focus:ring-offset-2 focus:ring-offset-zinc-900 ${
-        checked ? "bg-amber-400" : "bg-zinc-700"
-      }`}
+      className="relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2"
+      style={{
+        backgroundColor: checked ? "#1a1a1a" : "#C8C5BC",
+        focusRingColor: "#1a1a1a",
+        ["--tw-ring-offset-color" as string]: "#E8E6DF",
+      }}
     >
       <span
         className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform duration-200 mt-0.5 ${
@@ -274,8 +285,9 @@ function Toggle({
 // ─── Shared input styles ──────────────────────────────────────────────────────
 
 const INPUT =
-  "w-full rounded-lg border border-zinc-700 bg-zinc-800/60 px-3.5 py-2.5 text-sm text-white placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-amber-400/50 focus:border-amber-400/50 transition";
-const LABEL = "block text-xs font-medium text-zinc-400 mb-1.5";
+  "w-full rounded border px-3.5 py-2.5 text-sm placeholder:text-[#aaa] focus:outline-none focus:ring-1 focus:ring-[#1a1a1a] focus:border-[#1a1a1a] transition";
+const INPUT_STYLE = { borderColor: "#C8C5BC", backgroundColor: "#fff", color: "#1a1a1a" };
+const LABEL = "block text-xs font-medium mb-1.5";
 
 // ─── Section card ─────────────────────────────────────────────────────────────
 
@@ -323,21 +335,22 @@ function SectionCard({
 
   return (
     <div
-      className={`rounded-xl border transition-colors duration-200 overflow-hidden ${
-        section.enabled
-          ? "border-zinc-800 bg-zinc-900/50"
-          : "border-zinc-800/50 bg-zinc-900/20"
-      }`}
+      className="rounded border overflow-hidden transition-colors duration-200"
+      style={{
+        borderColor: "#C8C5BC",
+        backgroundColor: section.enabled ? "#fff" : "#DEDAD2",
+        opacity: section.enabled ? 1 : 0.7,
+      }}
     >
       {/* Card header row */}
       <div className="flex items-center gap-4 px-5 py-4">
         {/* Icon */}
         <span
-          className={`flex-shrink-0 flex items-center justify-center w-9 h-9 rounded-xl transition-colors ${
-            section.enabled
-              ? "bg-amber-400/10 text-amber-400"
-              : "bg-zinc-800 text-zinc-600"
-          }`}
+          className="flex-shrink-0 flex items-center justify-center w-9 h-9 rounded transition-colors"
+          style={{
+            backgroundColor: section.enabled ? "rgba(26,26,26,0.08)" : "#E8E6DF",
+            color: section.enabled ? "#1a1a1a" : "#888",
+          }}
         >
           <SectionIcon kind={section.kind} size={17} />
         </span>
@@ -346,18 +359,17 @@ function SectionCard({
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <span
-              className={`text-sm font-semibold leading-snug ${
-                section.enabled ? "text-white" : "text-zinc-500"
-              }`}
+              className="text-sm font-semibold leading-snug"
+              style={{ color: section.enabled ? "#1a1a1a" : "#888" }}
             >
               {section.title}
             </span>
-            <span className="text-xs text-zinc-700 uppercase tracking-wider font-medium">
+            <span className="text-xs uppercase tracking-wider font-medium" style={{ color: "#aaa" }}>
               {KIND_LABEL[section.kind]}
             </span>
           </div>
           {section.source && (
-            <p className="text-xs text-zinc-500 mt-0.5 truncate">{section.source}</p>
+            <p className="text-xs mt-0.5 truncate" style={{ color: "#888" }}>{section.source}</p>
           )}
         </div>
 
@@ -367,7 +379,10 @@ function SectionCard({
             <button
               type="button"
               onClick={openEdit}
-              className="text-xs font-medium text-zinc-500 hover:text-zinc-300 transition-colors px-2.5 py-1 rounded-md hover:bg-zinc-800 border border-transparent hover:border-zinc-700"
+              className="text-xs font-medium transition-colors px-2.5 py-1 rounded border border-transparent hover:border-[#C8C5BC]"
+              style={{ color: "#555" }}
+              onMouseEnter={e => (e.currentTarget.style.color = "#1a1a1a")}
+              onMouseLeave={e => (e.currentTarget.style.color = "#555")}
             >
               Edit
             </button>
@@ -382,28 +397,30 @@ function SectionCard({
 
       {/* Inline edit panel */}
       {editing && (
-        <div className="border-t border-zinc-800 bg-zinc-900/60 px-5 py-5 space-y-4">
+        <div className="px-5 py-5 space-y-4" style={{ borderTop: "1px solid #D5D2CA", backgroundColor: "#F4F2EC" }}>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className={LABEL}>Section title</label>
+              <label className={LABEL} style={{ color: "#555" }}>Section title</label>
               <input
                 className={INPUT}
+                style={INPUT_STYLE}
                 value={draft.title}
                 onChange={(e) => setDraft((d) => ({ ...d, title: e.target.value }))}
                 placeholder="Section title"
                 autoFocus
               />
               {!draft.title.trim() && (
-                <p className="mt-1.5 text-xs text-red-400">Title is required.</p>
+                <p className="mt-1.5 text-xs" style={{ color: "#cc3333" }}>Title is required.</p>
               )}
             </div>
             <div>
-              <label className={LABEL}>
+              <label className={LABEL} style={{ color: "#555" }}>
                 Source{" "}
-                <span className="text-zinc-600">(optional)</span>
+                <span style={{ color: "#aaa" }}>(optional)</span>
               </label>
               <input
                 className={INPUT}
+                style={INPUT_STYLE}
                 value={draft.source}
                 onChange={(e) => setDraft((d) => ({ ...d, source: e.target.value }))}
                 placeholder="e.g. RSS URL, city, tickers…"
@@ -411,12 +428,13 @@ function SectionCard({
             </div>
           </div>
           <div>
-            <label className={LABEL}>
+            <label className={LABEL} style={{ color: "#555" }}>
               Instructions{" "}
-              <span className="text-zinc-600">(optional)</span>
+              <span style={{ color: "#aaa" }}>(optional)</span>
             </label>
             <textarea
               className={`${INPUT} resize-none h-16`}
+              style={INPUT_STYLE}
               value={draft.instructions}
               onChange={(e) => setDraft((d) => ({ ...d, instructions: e.target.value }))}
               placeholder="Any preferences for this section…"
@@ -427,14 +445,18 @@ function SectionCard({
               type="button"
               onClick={save}
               disabled={!draft.title.trim()}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-amber-400 text-zinc-900 font-semibold text-xs px-4 py-2 hover:bg-amber-300 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              className="inline-flex items-center gap-1.5 rounded font-semibold text-xs px-4 py-2 transition-opacity hover:opacity-80 disabled:opacity-40 disabled:cursor-not-allowed"
+              style={{ backgroundColor: "#1a1a1a", color: "#E8E6DF" }}
             >
               Save changes
             </button>
             <button
               type="button"
               onClick={cancel}
-              className="text-xs text-zinc-500 hover:text-zinc-300 transition-colors px-3 py-2"
+              className="text-xs transition-colors px-3 py-2"
+              style={{ color: "#888" }}
+              onMouseEnter={e => (e.currentTarget.style.color = "#1a1a1a")}
+              onMouseLeave={e => (e.currentTarget.style.color = "#888")}
             >
               Cancel
             </button>
@@ -444,8 +466,8 @@ function SectionCard({
 
       {/* Instructions preview (when not editing) */}
       {!editing && section.instructions && section.enabled && (
-        <div className="border-t border-zinc-800/50 px-5 py-2.5">
-          <p className="text-xs text-zinc-600 italic leading-snug truncate">
+        <div className="px-5 py-2.5" style={{ borderTop: "1px solid #D5D2CA" }}>
+          <p className="text-xs italic leading-snug truncate" style={{ color: "#888" }}>
             &ldquo;{section.instructions}&rdquo;
           </p>
         </div>
@@ -483,26 +505,35 @@ function DigestModal({
   };
 
   return (
-    /* Backdrop */
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center px-4 py-10 sm:py-16 bg-black/70 backdrop-blur-sm overflow-y-auto"
+      className="fixed inset-0 z-50 flex items-start justify-center px-4 py-10 sm:py-16 overflow-y-auto"
+      style={{ backgroundColor: "rgba(26,26,26,0.4)" }}
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
-      <div className="relative w-full max-w-xl bg-[#111113] rounded-2xl border border-zinc-800 shadow-2xl overflow-hidden">
-
+      <div
+        className="relative w-full max-w-xl rounded-lg border shadow-xl overflow-hidden"
+        style={{ backgroundColor: "#E8E6DF", borderColor: "#C8C5BC" }}
+      >
         {/* Modal toolbar */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-800 bg-zinc-900/60">
+        <div
+          className="flex items-center justify-between px-6 py-4"
+          style={{ borderBottom: "1px solid #C8C5BC", backgroundColor: "#DEDAD2" }}
+        >
           <div className="flex items-center gap-2.5 text-sm">
-            <span className="text-amber-400 text-xs">●</span>
-            <span className="font-semibold text-white">Today&apos;s Digest</span>
-            <span className="text-zinc-600">·</span>
-            <span className="text-zinc-500 text-xs">{today}</span>
+            <span className="font-semibold" style={{ color: "#1a1a1a", fontFamily: "var(--font-playfair), serif" }}>
+              Today&apos;s Digest
+            </span>
+            <span style={{ color: "#C8C5BC" }}>·</span>
+            <span className="text-xs" style={{ color: "#888" }}>{today}</span>
           </div>
           <button
             type="button"
             onClick={onClose}
             aria-label="Close preview"
-            className="flex items-center justify-center w-7 h-7 rounded-lg text-zinc-500 hover:text-white hover:bg-zinc-800 transition-colors"
+            className="flex items-center justify-center w-7 h-7 rounded transition-colors"
+            style={{ color: "#888" }}
+            onMouseEnter={e => { e.currentTarget.style.color = "#1a1a1a"; e.currentTarget.style.backgroundColor = "#D5D2CA"; }}
+            onMouseLeave={e => { e.currentTarget.style.color = "#888"; e.currentTarget.style.backgroundColor = "transparent"; }}
           >
             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
@@ -514,14 +545,14 @@ function DigestModal({
         <div className="px-6 py-6 space-y-1 overflow-y-auto max-h-[70vh]">
 
           {/* Greeting */}
-          <div className="pb-5 mb-2 border-b border-zinc-800">
-            <p className="text-xs font-medium text-zinc-500 uppercase tracking-widest mb-2">
+          <div className="pb-5 mb-2" style={{ borderBottom: "1px solid #D5D2CA" }}>
+            <p className="text-xs font-medium uppercase tracking-widest mb-2" style={{ color: "#888" }}>
               Good morning
             </p>
-            <p className="text-xl font-semibold text-white leading-snug">
+            <p className="text-xl font-semibold leading-snug" style={{ color: "#1a1a1a", fontFamily: "var(--font-playfair), serif" }}>
               {MOCK_USER.name}, here&apos;s your briefing.
             </p>
-            <p className="text-sm text-zinc-500 mt-1">
+            <p className="text-sm mt-1" style={{ color: "#888" }}>
               {enabled.length} section{enabled.length !== 1 ? "s" : ""} ·{" "}
               {new Date().toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}
             </p>
@@ -529,30 +560,30 @@ function DigestModal({
 
           {/* Sections */}
           {enabled.length === 0 ? (
-            <p className="text-sm text-zinc-500 py-6 text-center">
+            <p className="text-sm py-6 text-center" style={{ color: "#888" }}>
               All sections are disabled. Toggle some on to see your digest.
             </p>
           ) : (
             enabled.map((section) => (
-              <div key={section.id} className="py-5 border-b border-zinc-800/60 last:border-0">
+              <div key={section.id} className="py-5 last:border-0" style={{ borderBottom: "1px solid #D5D2CA" }}>
                 {/* Section label */}
                 <div className="flex items-center gap-2 mb-4">
-                  <span className="text-amber-400">
+                  <span style={{ color: "#555" }}>
                     <SectionIcon kind={section.kind} size={14} />
                   </span>
-                  <span className="text-xs font-semibold uppercase tracking-widest text-zinc-500">
+                  <span className="text-xs font-semibold uppercase tracking-widest" style={{ color: "#888" }}>
                     {KIND_LABEL[section.kind]}
                   </span>
-                  <span className="flex-1 h-px bg-zinc-800" aria-hidden="true" />
+                  <span className="flex-1 h-px" style={{ backgroundColor: "#D5D2CA" }} aria-hidden="true" />
                 </div>
 
                 {/* Section content */}
                 {MOCK_DIGEST_CONTENT[section.id] ?? (
                   <div className="space-y-2">
-                    <div className="h-2.5 rounded-full bg-zinc-800 w-4/5" />
-                    <div className="h-2.5 rounded-full bg-zinc-800 w-3/5" />
-                    <div className="h-2.5 rounded-full bg-zinc-800 w-2/3" />
-                    <p className="text-xs text-zinc-600 pt-1 italic">
+                    <div className="h-2.5 rounded-full w-4/5" style={{ backgroundColor: "#C8C5BC" }} />
+                    <div className="h-2.5 rounded-full w-3/5" style={{ backgroundColor: "#C8C5BC" }} />
+                    <div className="h-2.5 rounded-full w-2/3" style={{ backgroundColor: "#C8C5BC" }} />
+                    <p className="text-xs pt-1 italic" style={{ color: "#888" }}>
                       Mock content for {section.title}
                     </p>
                   </div>
@@ -563,8 +594,8 @@ function DigestModal({
 
           {/* Footer */}
           <div className="pt-4 text-center">
-            <p className="text-xs text-zinc-700">
-              Briefd · Delivered at 7:00 AM · Tue, Mar 25
+            <p className="text-xs" style={{ color: "#aaa" }}>
+              The Paper Route · Delivered at 7:00 AM · Tue, Mar 25
             </p>
           </div>
         </div>
@@ -597,19 +628,31 @@ export default function DashboardPage() {
 
   return (
     <>
-      <div className="min-h-screen bg-[#0c0c0e] font-[family-name:var(--font-geist-sans)]">
+      <div
+        className="min-h-screen"
+        style={{ backgroundColor: "#E8E6DF", color: "#1a1a1a", fontFamily: "var(--font-inter), sans-serif" }}
+      >
 
         {/* Nav */}
-        <nav className="flex items-center justify-between px-6 py-5 sm:px-10 max-w-5xl mx-auto border-b border-zinc-900">
-          <Link href="/" className="text-base font-semibold tracking-tight">
-            <span className="text-amber-400">●</span>
-            <span className="ml-2 text-white">Briefd</span>
+        <nav
+          className="flex items-center justify-between px-6 py-5 sm:px-12 max-w-5xl mx-auto"
+          style={{ borderBottom: "1px solid #D5D2CA" }}
+        >
+          <Link
+            href="/"
+            className="text-base font-semibold tracking-tight"
+            style={{ fontFamily: "var(--font-playfair), serif", color: "#1a1a1a" }}
+          >
+            The Paper Route
           </Link>
           <div className="flex items-center gap-4">
             <button
               type="button"
               onClick={() => setShowModal(true)}
-              className="inline-flex items-center gap-2 text-sm font-medium text-zinc-300 hover:text-white border border-zinc-700 hover:border-zinc-500 rounded-full px-4 py-1.5 transition-colors"
+              className="inline-flex items-center gap-2 text-sm font-medium transition-colors rounded px-4 py-1.5"
+              style={{ color: "#555", border: "1px solid #C8C5BC" }}
+              onMouseEnter={e => { e.currentTarget.style.color = "#1a1a1a"; e.currentTarget.style.borderColor = "#1a1a1a"; }}
+              onMouseLeave={e => { e.currentTarget.style.color = "#555"; e.currentTarget.style.borderColor = "#C8C5BC"; }}
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
@@ -617,27 +660,36 @@ export default function DashboardPage() {
               </svg>
               Preview digest
             </button>
-            <div className="w-8 h-8 rounded-full bg-amber-400/20 flex items-center justify-center text-amber-400 text-xs font-bold select-none">
+            <div
+              className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold select-none"
+              style={{ backgroundColor: "rgba(26,26,26,0.1)", color: "#1a1a1a" }}
+            >
               {MOCK_USER.name[0]}
             </div>
           </div>
         </nav>
 
-        <main className="px-6 py-10 sm:px-10 max-w-5xl mx-auto space-y-8">
+        <main className="px-6 py-10 sm:px-12 max-w-5xl mx-auto space-y-8">
 
           {/* Greeting */}
           <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
             <div>
-              <p className="text-xs font-medium text-zinc-500 uppercase tracking-widest mb-2">
+              <p className="text-xs font-medium uppercase tracking-widest mb-2" style={{ color: "#888" }}>
                 {todayName}
               </p>
-              <h1 className="text-2xl sm:text-3xl font-semibold text-white tracking-tight">
+              <h1
+                className="text-2xl sm:text-3xl font-semibold tracking-tight"
+                style={{ color: "#1a1a1a", fontFamily: "var(--font-playfair), serif" }}
+              >
                 Good morning, {MOCK_USER.name}.
               </h1>
             </div>
             <Link
               href="/setup"
-              className="self-start sm:self-auto text-xs font-medium text-zinc-500 hover:text-zinc-300 transition-colors flex items-center gap-1.5"
+              className="self-start sm:self-auto text-xs font-medium flex items-center gap-1.5 transition-colors"
+              style={{ color: "#888" }}
+              onMouseEnter={e => (e.currentTarget.style.color = "#1a1a1a")}
+              onMouseLeave={e => (e.currentTarget.style.color = "#888")}
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
@@ -647,23 +699,24 @@ export default function DashboardPage() {
           </div>
 
           {/* Status banner */}
-          <div className={`flex items-center justify-between gap-4 rounded-2xl border px-6 py-4 transition-colors duration-300 ${
-            digestActive
-              ? "border-zinc-800 bg-zinc-900/50"
-              : "border-zinc-800/40 bg-zinc-900/20"
-          }`}>
+          <div
+            className="flex items-center justify-between gap-4 rounded border px-6 py-4 transition-colors duration-300"
+            style={{
+              borderColor: "#C8C5BC",
+              backgroundColor: digestActive ? "#fff" : "#DEDAD2",
+            }}
+          >
             <div className="flex items-center gap-3 min-w-0">
               <span
-                className={`w-2 h-2 rounded-full shrink-0 transition-colors ${
-                  digestActive ? "bg-emerald-400" : "bg-zinc-600"
-                }`}
+                className="w-2 h-2 rounded-full shrink-0 transition-colors"
+                style={{ backgroundColor: digestActive ? "#1a1a1a" : "#C8C5BC" }}
                 aria-hidden="true"
               />
               <div>
-                <p className={`text-sm font-semibold ${digestActive ? "text-white" : "text-zinc-500"}`}>
+                <p className="text-sm font-semibold" style={{ color: digestActive ? "#1a1a1a" : "#888" }}>
                   {digestActive ? "Digest active" : "Digest paused"}
                 </p>
-                <p className="text-xs text-zinc-500 mt-0.5">
+                <p className="text-xs mt-0.5" style={{ color: "#888" }}>
                   {digestActive
                     ? `Next delivery: Tomorrow at 7:00 AM · ${enabledCount} section${enabledCount !== 1 ? "s" : ""}`
                     : "No digest will be sent until you re-enable it"}
@@ -672,7 +725,7 @@ export default function DashboardPage() {
             </div>
             <div className="flex items-center gap-3 shrink-0">
               {digestActive && (
-                <span className="hidden sm:block text-xs text-zinc-600">
+                <span className="hidden sm:block text-xs" style={{ color: "#888" }}>
                   Last sent: {MOCK_DELIVERY.lastDelivered}
                 </span>
               )}
@@ -690,15 +743,18 @@ export default function DashboardPage() {
             {/* Sections list (2/3) */}
             <div className="lg:col-span-2 space-y-3">
               <div className="flex items-center justify-between mb-1">
-                <h2 className="text-xs font-semibold uppercase tracking-widest text-zinc-500">
+                <h2 className="text-xs font-semibold uppercase tracking-widest" style={{ color: "#888" }}>
                   Sections
-                  <span className="ml-2 text-zinc-700 font-normal normal-case tracking-normal">
+                  <span className="ml-2 font-normal normal-case tracking-normal" style={{ color: "#aaa" }}>
                     {enabledCount} of {sections.length} active
                   </span>
                 </h2>
                 <Link
                   href="/setup"
-                  className="text-xs text-zinc-600 hover:text-amber-400 transition-colors flex items-center gap-1"
+                  className="text-xs flex items-center gap-1 transition-colors"
+                  style={{ color: "#888" }}
+                  onMouseEnter={e => (e.currentTarget.style.color = "#1a1a1a")}
+                  onMouseLeave={e => (e.currentTarget.style.color = "#888")}
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                     <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
@@ -721,14 +777,17 @@ export default function DashboardPage() {
             <div className="space-y-4 lg:sticky lg:top-8">
 
               {/* Delivery settings card */}
-              <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 overflow-hidden">
-                <div className="flex items-center justify-between px-5 py-4 border-b border-zinc-800">
-                  <h2 className="text-xs font-semibold uppercase tracking-widest text-zinc-500">
+              <div className="rounded border overflow-hidden" style={{ borderColor: "#C8C5BC", backgroundColor: "#fff" }}>
+                <div className="flex items-center justify-between px-5 py-4" style={{ borderBottom: "1px solid #C8C5BC" }}>
+                  <h2 className="text-xs font-semibold uppercase tracking-widest" style={{ color: "#888" }}>
                     Delivery
                   </h2>
                   <button
                     type="button"
-                    className="text-xs font-medium text-zinc-500 hover:text-zinc-300 transition-colors px-2.5 py-1 rounded-md hover:bg-zinc-800 border border-transparent hover:border-zinc-700"
+                    className="text-xs font-medium transition-colors px-2.5 py-1 rounded border border-transparent"
+                    style={{ color: "#555" }}
+                    onMouseEnter={e => { e.currentTarget.style.color = "#1a1a1a"; e.currentTarget.style.borderColor = "#C8C5BC"; }}
+                    onMouseLeave={e => { e.currentTarget.style.color = "#555"; e.currentTarget.style.borderColor = "transparent"; }}
                   >
                     Edit
                   </button>
@@ -739,7 +798,7 @@ export default function DashboardPage() {
                     {
                       label: "Time",
                       value: (
-                        <span className="font-semibold text-white">7:00 AM</span>
+                        <span className="font-semibold" style={{ color: "#1a1a1a" }}>7:00 AM</span>
                       ),
                     },
                     {
@@ -749,7 +808,8 @@ export default function DashboardPage() {
                           {["M","T","W","T","F"].map((d, i) => (
                             <span
                               key={i}
-                              className="w-5 h-5 rounded-full bg-amber-400/15 text-amber-400 text-[10px] font-semibold flex items-center justify-center"
+                              className="w-5 h-5 rounded-full text-[10px] font-semibold flex items-center justify-center"
+                              style={{ backgroundColor: "rgba(26,26,26,0.08)", color: "#1a1a1a" }}
                             >
                               {d}
                             </span>
@@ -759,12 +819,12 @@ export default function DashboardPage() {
                     },
                     {
                       label: "Channel",
-                      value: <span className="text-zinc-200">Email</span>,
+                      value: <span style={{ color: "#1a1a1a" }}>Email</span>,
                     },
                     {
                       label: "Sending to",
                       value: (
-                        <span className="text-zinc-400 text-xs truncate max-w-[140px] text-right">
+                        <span className="text-xs truncate max-w-[140px] text-right" style={{ color: "#555" }}>
                           {MOCK_DELIVERY.email}
                         </span>
                       ),
@@ -772,12 +832,12 @@ export default function DashboardPage() {
                     {
                       label: "Timezone",
                       value: (
-                        <span className="text-zinc-400 text-xs">New York</span>
+                        <span className="text-xs" style={{ color: "#555" }}>New York</span>
                       ),
                     },
                   ].map(({ label, value }) => (
                     <div key={label} className="flex items-center justify-between gap-3 text-sm">
-                      <dt className="text-zinc-600 shrink-0">{label}</dt>
+                      <dt style={{ color: "#888" }}>{label}</dt>
                       <dd className="text-right">{value}</dd>
                     </div>
                   ))}
@@ -785,8 +845,8 @@ export default function DashboardPage() {
               </div>
 
               {/* Stats card */}
-              <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 px-5 py-4">
-                <h2 className="text-xs font-semibold uppercase tracking-widest text-zinc-500 mb-4">
+              <div className="rounded border px-5 py-4" style={{ borderColor: "#C8C5BC", backgroundColor: "#fff" }}>
+                <h2 className="text-xs font-semibold uppercase tracking-widest mb-4" style={{ color: "#888" }}>
                   Stats
                 </h2>
                 <div className="grid grid-cols-2 gap-3">
@@ -796,19 +856,22 @@ export default function DashboardPage() {
                     { label: "Streak", value: "12 days" },
                     { label: "Member since", value: "Jan 2026" },
                   ].map(({ label, value }) => (
-                    <div key={label} className="rounded-xl bg-zinc-800/50 px-3.5 py-3">
-                      <p className="text-lg font-semibold text-white leading-none">{value}</p>
-                      <p className="text-xs text-zinc-500 mt-1 leading-snug">{label}</p>
+                    <div key={label} className="px-3.5 py-3 rounded" style={{ backgroundColor: "#DEDAD2" }}>
+                      <p className="text-lg font-semibold leading-none" style={{ color: "#1a1a1a" }}>{value}</p>
+                      <p className="text-xs mt-1 leading-snug" style={{ color: "#888" }}>{label}</p>
                     </div>
                   ))}
                 </div>
               </div>
 
-              {/* Preview CTA — mobile duplicate */}
+              {/* Preview CTA — mobile */}
               <button
                 type="button"
                 onClick={() => setShowModal(true)}
-                className="lg:hidden w-full flex items-center justify-center gap-2 rounded-xl border border-zinc-700 text-zinc-300 text-sm font-medium py-3 hover:border-zinc-500 hover:text-white transition-colors"
+                className="lg:hidden w-full flex items-center justify-center gap-2 rounded border text-sm font-medium py-3 transition-colors"
+                style={{ borderColor: "#C8C5BC", color: "#555" }}
+                onMouseEnter={e => { e.currentTarget.style.borderColor = "#1a1a1a"; e.currentTarget.style.color = "#1a1a1a"; }}
+                onMouseLeave={e => { e.currentTarget.style.borderColor = "#C8C5BC"; e.currentTarget.style.color = "#555"; }}
               >
                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                   <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
