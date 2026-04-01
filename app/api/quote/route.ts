@@ -21,34 +21,41 @@ function getToneInstruction(): string {
 }
 
 export async function GET() {
+  if (!process.env.GEMINI_API_KEY) {
+    console.error("[/api/quote] GEMINI_API_KEY is not set");
+    return NextResponse.json({ error: "GEMINI_API_KEY is not configured" }, { status: 500 });
+  }
+
   const tone = getToneInstruction();
 
-  const model = genAI.getGenerativeModel({
-    model: "gemini-2.0-flash-lite",
-    systemInstruction: `You generate daily quotes for a morning briefing app called The Paper Route.
+  try {
+    const model = genAI.getGenerativeModel({
+      model: "gemini-2.0-flash-lite",
+      systemInstruction: `You generate daily quotes for a morning briefing app called The Paper Route.
 Return ONLY a JSON object with two fields: "quote" (the quote text, no quotation marks around it) and "author" (the person's name and, if relevant, a brief descriptor like their role or era — keep it short).
 No other text, no markdown, no explanation. Just the raw JSON object.`,
-  });
+    });
 
-  const result = await model.generateContent(
-    `Give me a single quote that is ${tone}. Avoid overused motivational quotes. Prefer lesser-known gems from writers, scientists, comedians, philosophers, or historical figures. The quote should feel like a discovery, not a poster.`
-  );
+    const result = await model.generateContent(
+      `Give me a single quote that is ${tone}. Avoid overused motivational quotes. Prefer lesser-known gems from writers, scientists, comedians, philosophers, or historical figures. The quote should feel like a discovery, not a poster.`
+    );
 
-  const text = result.response.text().trim();
+    const text = result.response.text().trim();
 
-  try {
     // Strip any accidental markdown fences
     const clean = text.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
     const parsed = JSON.parse(clean) as { quote: string; author: string };
 
     if (!parsed.quote || !parsed.author) {
-      throw new Error("Missing fields");
+      throw new Error("Gemini response missing 'quote' or 'author' fields");
     }
 
     return NextResponse.json(parsed);
-  } catch {
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error("[/api/quote] Error:", err);
     return NextResponse.json(
-      { error: "Failed to parse quote response" },
+      { error: "Failed to generate quote", detail: message },
       { status: 500 }
     );
   }

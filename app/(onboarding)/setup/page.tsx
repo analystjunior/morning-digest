@@ -34,6 +34,17 @@ interface DeliveryForm {
 
 type StepErrors = Record<string, string>;
 
+type WeatherDay = { date: string; high: number; low: number; conditions: string };
+type WeatherData = {
+  city: string;
+  temperature: number;
+  conditions: string;
+  humidity: number;
+  todayHigh: number;
+  todayLow: number;
+  forecast: WeatherDay[];
+};
+
 // ─── Static config ────────────────────────────────────────────────────────────
 
 const SECTION_OPTIONS: {
@@ -398,7 +409,28 @@ function SectionsStep({
   const [quotePreview, setQuotePreview] = useState<{ quote: string; author: string } | null>(null);
   const [quoteFetching, setQuoteFetching] = useState(false);
   const [quoteError, setQuoteError] = useState<string | null>(null);
+  const [weatherCity, setWeatherCity] = useState("");
+  const [weatherPreview, setWeatherPreview] = useState<WeatherData | null>(null);
+  const [weatherFetching, setWeatherFetching] = useState(false);
+  const [weatherError, setWeatherError] = useState<string | null>(null);
   const addedKinds = new Set(sections.map((s) => s.kind));
+
+  async function fetchWeatherPreview() {
+    if (!weatherCity.trim()) return;
+    setWeatherFetching(true);
+    setWeatherError(null);
+    setWeatherPreview(null);
+    try {
+      const res = await fetch(`/api/weather?city=${encodeURIComponent(weatherCity.trim())}`);
+      const data = await res.json() as WeatherData & { error?: string };
+      if (!res.ok) throw new Error(data.error ?? "Request failed");
+      setWeatherPreview(data);
+    } catch (err) {
+      setWeatherError(err instanceof Error ? err.message : "Couldn't load weather right now.");
+    } finally {
+      setWeatherFetching(false);
+    }
+  }
 
   async function fetchQuotePreview() {
     setQuoteFetching(true);
@@ -689,6 +721,117 @@ function SectionsStep({
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* Weather preview — shown when a Weather section is added */}
+      {addedKinds.has("weather") && (
+        <div
+          className="rounded border p-5 space-y-4"
+          style={{ borderColor: "#C8C5BC", backgroundColor: "#fff" }}
+        >
+          <p className="text-xs font-semibold uppercase tracking-widest" style={{ color: "#888" }}>
+            Weather preview
+          </p>
+
+          <div className="flex gap-2">
+            <input
+              className={INPUT}
+              style={{ ...INPUT_STYLE, flex: 1 }}
+              value={weatherCity}
+              onChange={(e) => setWeatherCity(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") fetchWeatherPreview(); }}
+              placeholder="Enter a city, e.g. New York, NY"
+            />
+            <button
+              type="button"
+              onClick={fetchWeatherPreview}
+              disabled={weatherFetching || !weatherCity.trim()}
+              className="inline-flex items-center gap-2 rounded text-xs font-medium px-3.5 py-1.5 transition-opacity hover:opacity-80 disabled:opacity-50 whitespace-nowrap"
+              style={{ backgroundColor: "#1a1a1a", color: "#E8E6DF" }}
+            >
+              {weatherFetching ? (
+                <>
+                  <svg
+                    className="animate-spin"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="12"
+                    height="12"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden="true"
+                  >
+                    <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+                  </svg>
+                  Loading…
+                </>
+              ) : (
+                "Preview weather"
+              )}
+            </button>
+          </div>
+
+          {weatherError && (
+            <p className="text-xs" style={{ color: "#cc3333" }}>{weatherError}</p>
+          )}
+
+          {weatherPreview && (
+            <div className="space-y-4 pt-1">
+              <div className="flex items-baseline gap-4">
+                <span
+                  className="text-4xl font-semibold leading-none"
+                  style={{ fontFamily: "var(--font-playfair), serif", color: "#1a1a1a" }}
+                >
+                  {weatherPreview.temperature}°F
+                </span>
+                <div>
+                  <p className="text-sm font-medium" style={{ color: "#1a1a1a" }}>
+                    {weatherPreview.city}
+                  </p>
+                  <p className="text-sm" style={{ color: "#555" }}>
+                    {weatherPreview.conditions.charAt(0).toUpperCase() + weatherPreview.conditions.slice(1)}
+                  </p>
+                </div>
+              </div>
+
+              <p className="text-xs" style={{ color: "#888" }}>
+                Today &mdash; H:{weatherPreview.todayHigh}°&ensp;L:{weatherPreview.todayLow}°&ensp;&middot;&ensp;{weatherPreview.humidity}% humidity
+              </p>
+
+              <div
+                className="grid grid-cols-3 gap-px rounded overflow-hidden"
+                style={{ backgroundColor: "#C8C5BC" }}
+              >
+                {weatherPreview.forecast.map((day) => (
+                  <div
+                    key={day.date}
+                    className="px-3 py-3 space-y-1"
+                    style={{ backgroundColor: "#fff" }}
+                  >
+                    <p className="text-xs font-semibold" style={{ color: "#1a1a1a" }}>
+                      {day.date.split(",")[0]}
+                    </p>
+                    <p className="text-xs" style={{ color: "#555" }}>
+                      H:{day.high}°&ensp;L:{day.low}°
+                    </p>
+                    <p className="text-xs" style={{ color: "#888" }}>
+                      {day.conditions.charAt(0).toUpperCase() + day.conditions.slice(1)}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {!weatherPreview && !weatherError && !weatherFetching && (
+            <p className="text-xs" style={{ color: "#aaa" }}>
+              Enter a city above to preview the weather block in your digest.
+            </p>
+          )}
         </div>
       )}
 
