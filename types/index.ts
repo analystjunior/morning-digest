@@ -7,6 +7,7 @@ export type SectionType =
   | "calendar"
   | "tasks"
   | "stocks"
+  | "crypto"
   | "quote"
   | "sports"
   | "custom";
