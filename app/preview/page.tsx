@@ -8,8 +8,7 @@ import {
   Clock, ExternalLink, ToggleLeft, Smartphone
 } from "lucide-react";
 import { useAppStore } from "@/lib/store";
-import { generateMockDigest } from "@/lib/mock-data";
-import { GeneratedDigest } from "@/lib/types";
+import { GeneratedDigest, PreviewDigestResponse } from "@/lib/types";
 import { formatTime, TIMEZONES, cn } from "@/lib/utils";
 import NavBar from "@/components/ui/NavBar";
 
@@ -184,14 +183,24 @@ export default function PreviewPage() {
     if (!isOnboarded) loadDemoData();
   }, []);
 
-  // Generate the mock digest
-  const generateDigest = () => {
+  // Fetch live digest from the API
+  const generateDigest = async () => {
     if (!subscription) return;
     setIsLoading(true);
-    setTimeout(() => {
-      setDigest(generateMockDigest(subscription.sections));
+    try {
+      const res = await fetch("/api/digest/preview", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sections: subscription.sections }),
+      });
+      const data = await res.json() as PreviewDigestResponse & { error?: string };
+      if (!res.ok) throw new Error(data.error ?? "Unknown error");
+      setDigest(data.digest);
+    } catch (err) {
+      console.error("[preview] Failed to generate digest:", err);
+    } finally {
       setIsLoading(false);
-    }, 600);
+    }
   };
 
   useEffect(() => {
@@ -271,8 +280,8 @@ export default function PreviewPage() {
         {digest && !isLoading && (
           <div className="mt-6 flex flex-col items-center gap-2 text-center">
             <p className="text-xs text-white/20">
-              This is a preview using mock AI-generated content.
-              In production, content is fetched live from your specified sources.
+              Live data from ESPN, OpenWeatherMap, Gemini, and Alpha Vantage.
+              Content updates each time you click Regenerate.
             </p>
             <Link href="/dashboard" className="btn-ghost text-xs py-1.5">
               <ArrowLeft className="h-3.5 w-3.5" /> Back to dashboard

@@ -18,7 +18,7 @@ export default function HomePage() {
           The Paper Route
         </span>
         <Link
-          href="/setup"
+          href="/onboarding"
           className="text-sm font-medium tracking-wide hover:opacity-60 transition-opacity duration-150"
         >
           Get started
@@ -46,7 +46,7 @@ export default function HomePage() {
         <hr style={{ borderColor: "#1a1a1a", borderTopWidth: "1px", marginTop: "2.5rem", marginBottom: "2.5rem" }} />
 
         <Link
-          href="/setup"
+          href="/onboarding"
           className="inline-block text-sm font-medium tracking-wide px-8 py-3 transition-opacity duration-150 hover:opacity-80"
           style={{
             backgroundColor: "#1a1a1a",

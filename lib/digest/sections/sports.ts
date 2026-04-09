@@ -6,6 +6,7 @@ export interface SportsConfig {
 interface Competitor {
   team: { displayName: string };
   score?: string;
+  homeAway?: "home" | "away";
 }
 
 interface Competition {
