@@ -16,9 +16,9 @@
  *   const authHeader = req.headers.get("authorization")
  *   if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) return 401
  */
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 
-export async function GET(req: NextRequest) {
+export async function GET() {
   // Verify cron secret (uncomment in production)
   // const authHeader = req.headers.get("authorization");
   // if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {

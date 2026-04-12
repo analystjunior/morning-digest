@@ -48,7 +48,6 @@ export async function POST(req: NextRequest) {
     }
 
     // Convert user's local time to UTC for scheduling
-    const [hours, minutes] = time.split(":").map(Number);
     const today = new Date().toISOString().split("T")[0];
     const localDate = new Date(`${today}T${time}:00`);
     const utcDate = fromZonedTime(localDate, timezone);

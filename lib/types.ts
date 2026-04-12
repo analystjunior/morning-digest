@@ -121,10 +121,12 @@ export interface SavePreferencesResponse {
 
 export interface PreviewDigestRequest {
   sections: DigestSection[];
+  userName?: string;
 }
 
 export interface PreviewDigestResponse {
-  digest: GeneratedDigest;
+  digest?: GeneratedDigest;
+  html?: string;
 }
 
 // ─── Onboarding State ────────────────────────────────────────────────────────

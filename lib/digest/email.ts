@@ -1,7 +1,9 @@
 import { Resend } from "resend";
 import type { GeneratedDigest } from "@/lib/types";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+function getResend() {
+  return new Resend(process.env.RESEND_API_KEY);
+}
 
 function buildHtml(digest: GeneratedDigest, userName: string): string {
   const dayStr = new Date(digest.date + "T12:00:00Z").toLocaleDateString("en-US", {
@@ -90,7 +92,7 @@ export async function sendDigestEmail({
     day: "numeric",
   });
 
-  const { error } = await resend.emails.send({
+  const { error } = await getResend().emails.send({
     from: "Briefd <onboarding@resend.dev>",
     to,
     subject: `Your Morning Digest — ${dayStr}`,

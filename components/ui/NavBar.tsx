@@ -2,8 +2,6 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Sun, LayoutDashboard, Eye } from "lucide-react";
-import { cn } from "@/lib/utils";
 import { useAppStore } from "@/lib/store";
 
 export default function NavBar() {
@@ -11,47 +9,56 @@ export default function NavBar() {
   const isOnboarded = useAppStore((s) => s.isOnboarded);
 
   const links = [
-    { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, requiresAuth: true },
-    { href: "/preview", label: "Preview", icon: Eye, requiresAuth: true },
+    { href: "/dashboard", label: "Dashboard", requiresAuth: true },
+    { href: "/preview", label: "Preview", requiresAuth: true },
   ];
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 border-b border-white/[0.05] bg-surface-0/80 backdrop-blur-xl">
-      <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4 sm:px-6">
-        {/* Logo */}
-        <Link href="/" className="flex items-center gap-2 group">
-          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-brand-500/20 ring-1 ring-brand-500/30 transition-all group-hover:bg-brand-500/30">
-            <Sun className="h-3.5 w-3.5 text-brand-400" strokeWidth={2.5} />
-          </div>
-          <span className="text-sm font-semibold text-white/90 tracking-tight">
-            Morning<span className="text-brand-400">Digest</span>
-          </span>
+    <header
+      className="fixed top-0 left-0 right-0 z-50 backdrop-blur-sm"
+      style={{ backgroundColor: "rgba(232,230,223,0.97)", borderBottom: "1px solid #d4d0c8" }}
+    >
+      <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-6 sm:px-12">
+        <Link
+          href="/"
+          className="text-sm font-semibold tracking-tight transition-opacity hover:opacity-70"
+          style={{ fontFamily: "var(--font-playfair), serif", color: "#1a1a1a" }}
+        >
+          The Paper Route
         </Link>
 
-        {/* Nav links */}
-        <nav className="flex items-center gap-1">
-          {links.map(({ href, label, icon: Icon, requiresAuth }) => {
+        <nav className="flex items-center gap-6">
+          {links.map(({ href, label, requiresAuth }) => {
             if (requiresAuth && !isOnboarded) return null;
             const active = pathname === href;
             return (
               <Link
                 key={href}
                 href={href}
-                className={cn(
-                  "flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-all",
-                  active
-                    ? "bg-white/[0.08] text-white"
-                    : "text-white/50 hover:bg-white/[0.04] hover:text-white/80"
-                )}
+                className="text-sm font-medium transition-opacity hover:opacity-60"
+                style={{
+                  color: "#1a1a1a",
+                  opacity: active ? 1 : 0.5,
+                  textDecoration: active ? "underline" : "none",
+                  textUnderlineOffset: "3px",
+                }}
               >
-                <Icon className="h-3.5 w-3.5" />
                 {label}
               </Link>
             );
           })}
 
           {!isOnboarded && (
-            <Link href="/onboarding" className="btn-primary py-1.5 px-4 text-xs">
+            <Link
+              href="/onboarding"
+              className="text-sm font-medium tracking-wide transition-opacity hover:opacity-80"
+              style={{
+                backgroundColor: "#1a1a1a",
+                color: "#E8E6DF",
+                borderRadius: "3px",
+                padding: "6px 16px",
+              }}
+            >
               Get started
             </Link>
           )}

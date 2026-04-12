@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, Suspense } from "react";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   ArrowRight, ArrowLeft, Check, Plus, Trash2,
@@ -420,12 +421,13 @@ function OnboardingContent() {
         style={{ backgroundColor: "rgba(232,230,223,0.95)", borderBottom: `1px solid ${BORDER}` }}
       >
         <div className="mx-auto flex h-14 max-w-2xl items-center justify-between px-4 sm:px-6">
-          <span
-            className="text-sm font-semibold"
+          <Link
+            href="/"
+            className="text-sm font-semibold transition-opacity hover:opacity-70"
             style={{ fontFamily: "var(--font-playfair), serif", color: DARK }}
           >
             The Paper Route
-          </span>
+          </Link>
           <StepIndicator current={step} />
         </div>
       </div>
@@ -440,10 +442,10 @@ function OnboardingContent() {
                 className="mb-2 text-2xl font-bold"
                 style={{ fontFamily: "var(--font-playfair), serif", color: DARK }}
               >
-                Let's get to know you
+                Let&apos;s get to know you
               </h1>
               <p className="text-sm" style={{ color: "#666" }}>
-                We'll use this to personalize your digest and know where to send it.
+                We&apos;ll use this to personalize your digest and know where to send it.
               </p>
             </div>
 

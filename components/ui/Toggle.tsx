@@ -24,10 +24,10 @@ export default function Toggle({ checked, onChange, label, size = "md" }: Toggle
         aria-checked={checked}
         onClick={() => onChange(!checked)}
         className={cn(
-          "relative inline-flex shrink-0 items-center rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/50",
+          "relative inline-flex shrink-0 items-center rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none",
           s.track,
-          checked ? "bg-brand-500" : "bg-surface-4"
         )}
+        style={{ backgroundColor: checked ? "#1a1a1a" : "#d4d0c8" }}
       >
         <span
           className={cn(
@@ -37,7 +37,7 @@ export default function Toggle({ checked, onChange, label, size = "md" }: Toggle
           )}
         />
       </button>
-      {label && <span className="text-sm text-white/60">{label}</span>}
+      {label && <span className="text-sm" style={{ color: "#555" }}>{label}</span>}
     </label>
   );
 }

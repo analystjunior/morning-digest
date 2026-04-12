@@ -264,7 +264,7 @@ export function generateMockDigest(
 
   const generatedSections = sections
     .filter((s) => s.enabled)
-    .map((section, index) => {
+    .map((section) => {
       const content =
         mockContent[section.title] ??
         mockContent[Object.keys(mockContent).find((k) =>

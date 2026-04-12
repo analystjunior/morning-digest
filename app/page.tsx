@@ -100,7 +100,7 @@ export default function HomePage() {
               Set your delivery time
             </p>
             <p className="text-sm leading-relaxed" style={{ color: "#555" }}>
-              Pick the exact time your briefing arrives. Early riser or slow starter — it's up to you.
+              Pick the exact time your briefing arrives. Early riser or slow starter — it&apos;s up to you.
             </p>
           </div>
 

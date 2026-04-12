@@ -2,51 +2,55 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import {
-  Sun, Mail, MessageSquare, ArrowLeft, RefreshCw,
-  Clock, ExternalLink, ToggleLeft, Smartphone
+  Mail, ArrowLeft, RefreshCw, Smartphone,
 } from "lucide-react";
 import { useAppStore } from "@/lib/store";
-import { GeneratedDigest, PreviewDigestResponse } from "@/lib/types";
 import { formatTime, TIMEZONES, cn } from "@/lib/utils";
 import NavBar from "@/components/ui/NavBar";
+import { generateMockDigest } from "@/lib/mock-data";
+
+// ─── Style tokens ─────────────────────────────────────────────────────────────
+const BG     = "#E8E6DF";
+const DARK   = "#1a1a1a";
+const BORDER = "#d4d0c8";
+const MUTED  = "#888";
+const SEC    = "#555";
+const CARD   = "white";
 
 type ViewMode = "email" | "sms";
 
-// ─── SMS preview component ─────────────────────────────────────────────────
-function SMSPreview({ digest, userName }: { digest: GeneratedDigest; userName: string }) {
+// ─── SMS preview (uses mock digest for structure) ─────────────────────────────
+function SMSPreview({ sections, userName }: { sections: ReturnType<typeof generateMockDigest>["sections"]; userName: string }) {
+  const date = new Date().toLocaleDateString("en-US", { month: "short", day: "numeric" });
   const lines: string[] = [
-    `☀️ Morning Digest — ${digest.date}`,
+    `☀️ The Paper Route — ${date}`,
     `Hey ${userName.split(" ")[0]}! Here's your briefing:\n`,
-    ...digest.sections.map((section) => {
-      const bullets = section.items
-        .slice(0, 2)
-        .map((item) => `• ${item.text}`)
-        .join("\n");
+    ...sections.map((section) => {
+      const bullets = section.items.slice(0, 2).map((item) => `• ${item.text}`).join("\n");
       return `${section.emoji} *${section.title}*\n${bullets}`;
     }),
-    "\n—\nReply STOP to unsubscribe. MorningDigest",
+    "\n—\nReply STOP to unsubscribe. The Paper Route",
   ];
 
   return (
     <div className="mx-auto max-w-sm">
-      {/* Phone mockup */}
-      <div className="rounded-[2.5rem] border-4 border-surface-4 bg-surface-1 p-4 shadow-2xl shadow-black/60">
-        {/* Phone header */}
+      <div
+        className="rounded-[2.5rem] p-4 shadow-2xl"
+        style={{ border: "4px solid #2d2d2d", backgroundColor: "#1c1c1e" }}
+      >
         <div className="mb-4 flex items-center justify-center">
-          <div className="h-1.5 w-16 rounded-full bg-surface-4" />
+          <div className="h-1.5 w-16 rounded-full" style={{ backgroundColor: "#3a3a3c" }} />
         </div>
-
-        {/* Message bubble area */}
-        <div className="rounded-2xl bg-surface-0 p-4 min-h-[500px]">
-          {/* Sender */}
-          <div className="mb-4 text-center text-xs text-white/25">
-            Morning Digest · {new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })}
+        <div className="rounded-2xl p-4 min-h-[500px]" style={{ backgroundColor: "#f2f2f7" }}>
+          <div className="mb-4 text-center text-xs" style={{ color: MUTED }}>
+            The Paper Route · {new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })}
           </div>
-
-          <div className="max-w-[85%] rounded-2xl rounded-tl-sm bg-surface-3 p-3.5">
-            <div className="space-y-3 text-sm text-white/80 leading-relaxed whitespace-pre-line font-mono text-xs">
+          <div
+            className="max-w-[85%] rounded-2xl rounded-tl-sm p-3.5"
+            style={{ backgroundColor: "#e5e5ea" }}
+          >
+            <div className="space-y-3 text-xs leading-relaxed whitespace-pre-line font-mono" style={{ color: DARK }}>
               {lines.map((line, i) => (
                 <p key={i}>{line}</p>
               ))}
@@ -58,14 +62,11 @@ function SMSPreview({ digest, userName }: { digest: GeneratedDigest; userName: s
   );
 }
 
-// ─── Email preview component ───────────────────────────────────────────────
+// ─── Email preview chrome ────────────────────────────────────────────────────
 function EmailPreview({
-  digest,
-  userName,
-  deliveryTime,
-  timezone,
+  html, userName, deliveryTime, timezone,
 }: {
-  digest: GeneratedDigest;
+  html: string;
   userName: string;
   deliveryTime: string;
   timezone: string;
@@ -75,127 +76,82 @@ function EmailPreview({
   });
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-white/[0.07] bg-surface-2 shadow-2xl shadow-black/50">
+    <div
+      className="overflow-hidden rounded-xl shadow-lg"
+      style={{ border: `1px solid ${BORDER}` }}
+    >
       {/* Email client chrome */}
-      <div className="border-b border-white/[0.05] bg-surface-3 px-5 py-4">
+      <div
+        className="px-5 py-4"
+        style={{ backgroundColor: "#f5f3ee", borderBottom: `1px solid ${BORDER}` }}
+      >
         <div className="mb-3 flex items-center gap-2">
-          <div className="h-2.5 w-2.5 rounded-full bg-red-500/70" />
-          <div className="h-2.5 w-2.5 rounded-full bg-yellow-500/70" />
-          <div className="h-2.5 w-2.5 rounded-full bg-green-500/70" />
+          <div className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: "#ff5f57" }} />
+          <div className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: "#febc2e" }} />
+          <div className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: "#28c840" }} />
         </div>
-        <div className="space-y-1 text-xs text-white/40">
-          <p><span className="text-white/20">From:</span> MorningDigest &lt;digest@morningdigest.app&gt;</p>
-          <p><span className="text-white/20">To:</span> {userName} &lt;you@example.com&gt;</p>
-          <p className="font-medium text-white/60">
-            <span className="text-white/20">Subject:</span> ☀️ Your Morning Digest — {date}
+        <div className="space-y-1 text-xs" style={{ color: MUTED }}>
+          <p><span style={{ color: "#bbb" }}>From:</span> The Paper Route &lt;digest@thepaperroute.app&gt;</p>
+          <p><span style={{ color: "#bbb" }}>To:</span> {userName} &lt;you@example.com&gt;</p>
+          <p className="font-medium" style={{ color: SEC }}>
+            <span style={{ color: "#bbb" }}>Subject:</span> ☀️ Your Morning Digest — {date}
           </p>
         </div>
       </div>
 
-      {/* Email body */}
-      <div className="digest-email p-6 sm:p-8 space-y-6">
-        {/* Header */}
-        <div className="border-b border-white/[0.05] pb-6">
-          <div className="flex items-center gap-2 mb-4">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-500/20">
-              <Sun className="h-4 w-4 text-brand-400" />
-            </div>
-            <span className="text-sm font-bold text-white/80 tracking-tight">
-              Morning<span className="text-brand-400">Digest</span>
-            </span>
-          </div>
+      {/* Rendered HTML digest */}
+      <div className="p-6 sm:p-8" style={{ backgroundColor: CARD }}>
+        <div dangerouslySetInnerHTML={{ __html: html }} />
+      </div>
 
-          <h1 className="text-xl font-bold text-white mb-1">
-            Good morning, {userName.split(" ")[0]} ☀️
-          </h1>
-          <p className="text-sm text-white/40">
-            {date} · Your personalized briefing, ready in 5 minutes
-          </p>
-        </div>
-
-        {/* Sections */}
-        {digest.sections.map((section, i) => (
-          <div key={section.sectionId} className="space-y-3">
-            {/* Section header */}
-            <div className="flex items-center gap-2.5">
-              <span className="text-xl">{section.emoji}</span>
-              <h2 className="text-xs font-bold uppercase tracking-widest text-white/40">
-                {section.title}
-              </h2>
-            </div>
-
-            {/* Items */}
-            <div className="rounded-2xl border border-white/[0.05] bg-surface-3 p-4 space-y-3">
-              {section.items.map((item, j) => (
-                <div key={j} className="flex items-start gap-3">
-                  <div className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-brand-500" />
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm leading-relaxed text-white/80">{item.text}</p>
-                    {item.source && (
-                      <p className="mt-0.5 text-xs text-white/25 flex items-center gap-1">
-                        <ExternalLink className="h-2.5 w-2.5" />
-                        {item.source}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Divider between sections */}
-            {i < digest.sections.length - 1 && <div className="divider" />}
-          </div>
-        ))}
-
-        {/* Footer */}
-        <div className="border-t border-white/[0.05] pt-5 text-center space-y-2">
-          <p className="text-xs text-white/20">
-            Delivered at {formatTime(deliveryTime)} ·{" "}
-            {TIMEZONES.find((t) => t.value === timezone)?.label ?? timezone}
-          </p>
-          <p className="text-xs text-white/20">
-            <Link href="/dashboard" className="text-brand-500/60 hover:text-brand-500">
-              Edit my digest
-            </Link>
-            {" · "}
-            <span className="cursor-pointer text-white/20 hover:text-white/40">Unsubscribe</span>
-          </p>
-          <div className="flex items-center justify-center gap-1.5 pt-1">
-            <Sun className="h-3 w-3 text-brand-500/40" />
-            <span className="text-[10px] text-white/15 tracking-wide">MORNINGDIGEST</span>
-          </div>
-        </div>
+      {/* Footer */}
+      <div
+        className="px-6 py-4 text-center space-y-1"
+        style={{ backgroundColor: "#f9f8f5", borderTop: `1px solid #f0ede6` }}
+      >
+        <p className="text-xs" style={{ color: MUTED }}>
+          Delivered at {formatTime(deliveryTime)} ·{" "}
+          {TIMEZONES.find((t) => t.value === timezone)?.label ?? timezone}
+        </p>
+        <p className="text-xs" style={{ color: MUTED }}>
+          <Link href="/dashboard" className="transition-opacity hover:opacity-60" style={{ color: SEC }}>
+            Edit my digest
+          </Link>
+          {" · "}
+          <span className="cursor-pointer transition-opacity hover:opacity-60" style={{ color: MUTED }}>
+            Unsubscribe
+          </span>
+        </p>
       </div>
     </div>
   );
 }
 
-// ─── Main Preview Page ─────────────────────────────────────────────────────
+// ─── Main Preview Page ────────────────────────────────────────────────────────
 export default function PreviewPage() {
-  const router = useRouter();
   const { user, subscription, isOnboarded, loadDemoData } = useAppStore();
   const [viewMode, setViewMode] = useState<ViewMode>("email");
-  const [digest, setDigest] = useState<GeneratedDigest | null>(null);
+  const [digestHtml, setDigestHtml] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Load demo data if not onboarded (for direct-link previews)
   useEffect(() => {
     if (!isOnboarded) loadDemoData();
   }, []);
 
-  // Fetch live digest from the API
-  const generateDigest = async () => {
-    if (!subscription) return;
+  const generate = async (sub?: typeof subscription, usr?: typeof user) => {
+    const s = sub ?? subscription;
+    const u = usr ?? user;
+    if (!s || !u) return;
     setIsLoading(true);
     try {
       const res = await fetch("/api/digest/preview", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ sections: subscription.sections }),
+        body: JSON.stringify({ sections: s.sections, userName: u.name }),
       });
-      const data = await res.json() as PreviewDigestResponse & { error?: string };
+      const data = await res.json() as { html?: string; error?: string };
       if (!res.ok) throw new Error(data.error ?? "Unknown error");
-      setDigest(data.digest);
+      setDigestHtml(data.html ?? null);
     } catch (err) {
       console.error("[preview] Failed to generate digest:", err);
     } finally {
@@ -203,28 +159,47 @@ export default function PreviewPage() {
     }
   };
 
+  // Trigger when subscription first becomes available (covers both initial load and store hydration)
   useEffect(() => {
-    if (subscription) generateDigest();
-  }, [subscription?.updatedAt]);
+    if (subscription && user && !digestHtml && !isLoading) {
+      generate(subscription, user);
+    }
+  }, [subscription?.id, user?.id]);
 
   if (!subscription || !user) return null;
 
   const { delivery } = subscription;
 
+  // Build mock sections for SMS preview
+  const mockSections = generateMockDigest(
+    subscription.sections,
+    new Date().toISOString().split("T")[0]
+  ).sections;
+
   return (
-    <div className="min-h-screen bg-surface-0">
+    <div className="min-h-screen" style={{ backgroundColor: BG }}>
       <NavBar />
 
       <div className="mx-auto max-w-3xl px-4 pt-24 pb-20 sm:px-6">
+
         {/* Page header */}
         <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="text-xl font-bold text-white">Digest preview</h1>
-            <p className="text-sm text-white/35">This is how your digest looks when it arrives</p>
+            <h1
+              className="text-xl font-bold"
+              style={{ fontFamily: "var(--font-playfair), serif", color: DARK }}
+            >
+              Digest preview
+            </h1>
+            <p className="text-sm" style={{ color: MUTED }}>This is how your digest looks when it arrives</p>
           </div>
+
           <div className="flex items-center gap-2">
-            {/* View mode toggle */}
-            <div className="flex items-center rounded-xl border border-white/[0.07] bg-surface-2 p-1">
+            {/* Email / SMS toggle */}
+            <div
+              className="flex items-center rounded-lg p-1"
+              style={{ backgroundColor: CARD, border: `1px solid ${BORDER}` }}
+            >
               {([
                 { mode: "email" as ViewMode, icon: Mail, label: "Email" },
                 { mode: "sms" as ViewMode, icon: Smartphone, label: "SMS" },
@@ -232,12 +207,12 @@ export default function PreviewPage() {
                 <button
                   key={mode}
                   onClick={() => setViewMode(mode)}
-                  className={cn(
-                    "flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-all",
+                  className="flex items-center gap-1.5 rounded px-3 py-1.5 text-xs font-medium transition-all"
+                  style={
                     viewMode === mode
-                      ? "bg-surface-4 text-white"
-                      : "text-white/35 hover:text-white/60"
-                  )}
+                      ? { backgroundColor: DARK, color: BG }
+                      : { color: MUTED }
+                  }
                 >
                   <Icon className="h-3.5 w-3.5" /> {label}
                 </button>
@@ -245,9 +220,10 @@ export default function PreviewPage() {
             </div>
 
             <button
-              onClick={generateDigest}
+              onClick={() => generate()}
               disabled={isLoading}
-              className="btn-secondary text-xs py-2"
+              className="flex items-center gap-1.5 rounded px-3 py-2 text-xs font-medium transition-opacity hover:opacity-70 disabled:opacity-40"
+              style={{ backgroundColor: CARD, border: `1px solid ${BORDER}`, color: DARK }}
             >
               <RefreshCw className={cn("h-3.5 w-3.5", isLoading && "animate-spin")} />
               Regenerate
@@ -255,35 +231,42 @@ export default function PreviewPage() {
           </div>
         </div>
 
-        {/* Preview */}
+        {/* Content */}
         {isLoading ? (
           <div className="flex flex-col items-center justify-center py-24 gap-3">
-            <Sun className="h-8 w-8 text-brand-400 animate-pulse" />
-            <p className="text-sm text-white/30">Curating your digest...</p>
+            <div
+              className="h-8 w-8 rounded-full border-2 border-t-transparent animate-spin"
+              style={{ borderColor: `${DARK} transparent ${DARK} ${DARK}` }}
+            />
+            <p className="text-sm" style={{ color: MUTED }}>Curating your digest...</p>
           </div>
-        ) : digest ? (
+        ) : (digestHtml || viewMode === "sms") ? (
           <div className="animate-in">
-            {viewMode === "email" ? (
+            {viewMode === "email" && digestHtml ? (
               <EmailPreview
-                digest={digest}
+                html={digestHtml}
                 userName={user.name}
                 deliveryTime={delivery.time}
                 timezone={delivery.timezone}
               />
-            ) : (
-              <SMSPreview digest={digest} userName={user.name} />
-            )}
+            ) : viewMode === "sms" ? (
+              <SMSPreview sections={mockSections} userName={user.name} />
+            ) : null}
           </div>
         ) : null}
 
-        {/* Footer meta */}
-        {digest && !isLoading && (
+        {/* Footer */}
+        {(digestHtml || viewMode === "sms") && !isLoading && (
           <div className="mt-6 flex flex-col items-center gap-2 text-center">
-            <p className="text-xs text-white/20">
-              Live data from ESPN, OpenWeatherMap, Gemini, and Alpha Vantage.
+            <p className="text-xs" style={{ color: MUTED }}>
+              Live data from ESPN, OpenWeatherMap, ZenQuotes, and more.
               Content updates each time you click Regenerate.
             </p>
-            <Link href="/dashboard" className="btn-ghost text-xs py-1.5">
+            <Link
+              href="/dashboard"
+              className="flex items-center gap-1.5 text-xs font-medium transition-opacity hover:opacity-60"
+              style={{ color: SEC }}
+            >
               <ArrowLeft className="h-3.5 w-3.5" /> Back to dashboard
             </Link>
           </div>
