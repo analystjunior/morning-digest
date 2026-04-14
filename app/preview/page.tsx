@@ -8,7 +8,7 @@ import {
 import { useAppStore } from "@/lib/store";
 import { formatTime, TIMEZONES, cn } from "@/lib/utils";
 import NavBar from "@/components/ui/NavBar";
-import { generateMockDigest } from "@/lib/mock-data";
+import { GeneratedDigest } from "@/lib/types";
 
 // ─── Style tokens ─────────────────────────────────────────────────────────────
 const BG     = "#E8E6DF";
@@ -20,8 +20,8 @@ const CARD   = "white";
 
 type ViewMode = "email" | "sms";
 
-// ─── SMS preview (uses mock digest for structure) ─────────────────────────────
-function SMSPreview({ sections, userName }: { sections: ReturnType<typeof generateMockDigest>["sections"]; userName: string }) {
+// ─── SMS preview ──────────────────────────────────────────────────────────────
+function SMSPreview({ sections, userName }: { sections: GeneratedDigest["sections"]; userName: string }) {
   const date = new Date().toLocaleDateString("en-US", { month: "short", day: "numeric" });
   const lines: string[] = [
     `☀️ The Paper Route — ${date}`,
@@ -132,6 +132,7 @@ export default function PreviewPage() {
   const { user, subscription, isOnboarded, loadDemoData } = useAppStore();
   const [viewMode, setViewMode] = useState<ViewMode>("email");
   const [digestHtml, setDigestHtml] = useState<string | null>(null);
+  const [digestData, setDigestData] = useState<GeneratedDigest | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   // Ref guard prevents duplicate auto-generate calls when the store
   // sets user and subscription as separate updates (each triggers the effect).
@@ -152,9 +153,10 @@ export default function PreviewPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ sections: s.sections, userName: u.name }),
       });
-      const data = await res.json() as { html?: string; error?: string };
+      const data = await res.json() as { html?: string; digest?: GeneratedDigest; error?: string };
       if (!res.ok) throw new Error(data.error ?? "Unknown error");
       setDigestHtml(data.html ?? null);
+      setDigestData(data.digest ?? null);
     } catch (err) {
       console.error("[preview] Failed to generate digest:", err);
     } finally {
@@ -175,12 +177,6 @@ export default function PreviewPage() {
   if (!subscription || !user) return null;
 
   const { delivery } = subscription;
-
-  // Build mock sections for SMS preview
-  const mockSections = generateMockDigest(
-    subscription.sections,
-    new Date().toISOString().split("T")[0]
-  ).sections;
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: BG }}>
@@ -256,7 +252,7 @@ export default function PreviewPage() {
                 timezone={delivery.timezone}
               />
             ) : viewMode === "sms" ? (
-              <SMSPreview sections={mockSections} userName={user.name} />
+              <SMSPreview sections={digestData?.sections ?? []} userName={user.name} />
             ) : null}
           </div>
         ) : null}

@@ -15,7 +15,7 @@ export async function POST(req: NextRequest) {
     const digest = await generateDigest(body.sections, date);
     const html = digestToHTML(digest, userName);
 
-    const response: PreviewDigestResponse = { html };
+    const response: PreviewDigestResponse = { html, digest };
     return NextResponse.json(response, { status: 200 });
   } catch (err) {
     console.error("[/api/digest/preview]", err);
