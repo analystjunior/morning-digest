@@ -24,17 +24,25 @@ interface AppStore {
   reset: () => void;
 }
 
-const DEFAULT_ONBOARDING: OnboardingState = {
-  step: "welcome",
-  name: "",
-  sections: [],
-  delivery: {
-    time: "07:00",
-    timezone: "America/New_York",
-    channels: ["email"],
-    email: "",
-  },
-};
+function getDefaultOnboarding(): OnboardingState {
+  return {
+    step: "welcome",
+    name: "",
+    sections: [
+      { id: generateId(), title: "Today's Weather", type: "weather", order: 0, enabled: true, mode: "brief" },
+      { id: generateId(), title: "Morning Headlines", type: "news",    order: 1, enabled: true, mode: "brief" },
+      { id: generateId(), title: "Sports News",       type: "sports",  order: 2, enabled: true, mode: "brief" },
+      { id: generateId(), title: "Market Snapshot",   type: "finance", order: 3, enabled: true, mode: "brief" },
+      { id: generateId(), title: "Quote of the Day",  type: "quote",   order: 4, enabled: true, mode: "brief" },
+    ],
+    delivery: {
+      time: "07:00",
+      timezone: "America/New_York",
+      channels: ["email"],
+      email: "",
+    },
+  };
+}
 
 export const useAppStore = create<AppStore>()(
   persist(
@@ -42,7 +50,7 @@ export const useAppStore = create<AppStore>()(
       user: null,
       subscription: null,
       isOnboarded: false,
-      onboarding: DEFAULT_ONBOARDING,
+      onboarding: getDefaultOnboarding(),
 
       setUser: (user: User) => set({ user }),
 
@@ -88,7 +96,7 @@ export const useAppStore = create<AppStore>()(
           updatedAt: now,
         };
 
-        set({ user, subscription, isOnboarded: true, onboarding: DEFAULT_ONBOARDING });
+        set({ user, subscription, isOnboarded: true, onboarding: getDefaultOnboarding() });
       },
 
       loadDemoData: () => {
@@ -104,7 +112,7 @@ export const useAppStore = create<AppStore>()(
           user: null,
           subscription: null,
           isOnboarded: false,
-          onboarding: DEFAULT_ONBOARDING,
+          onboarding: getDefaultOnboarding(),
         }),
     }),
     {

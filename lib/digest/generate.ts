@@ -13,6 +13,26 @@ import { fetchCryptoData } from "./sections/crypto";
 import { fetchSportsHeadlines } from "./sections/sports";
 import { fetchWeatherData } from "./sections/weather";
 import { fetchQuoteData } from "./sections/quote";
+import { fetchNewsHeadlines } from "./sections/news";
+
+// ── News ──────────────────────────────────────────────────────────────────────
+
+async function buildNewsSection(section: DigestSection): Promise<GeneratedSection> {
+  const limit = section.mode === "brief" ? 3 : 5;
+  const headlines = await fetchNewsHeadlines(limit);
+
+  const items: GeneratedItem[] = headlines.map((h) => ({
+    text: h.title,
+    source: h.source,
+  }));
+
+  return {
+    sectionId: section.id,
+    title: section.title,
+    emoji: "📰",
+    items,
+  };
+}
 
 // ── Sports ────────────────────────────────────────────────────────────────────
 
@@ -37,23 +57,14 @@ async function buildSportsSection(section: DigestSection): Promise<GeneratedSect
 
 async function buildStocksSection(section: DigestSection): Promise<GeneratedSection> {
   const config = section.config ?? {};
-  const tickers = (config.tickers as string[] | undefined) ?? [];
+  const tickers = (config.tickers as string[] | undefined) ?? ["SPY", "AAPL", "NVDA"];
 
-  const results = await fetchStocksData({ tickers });
+  const results = await fetchStocksData(tickers);
 
-  const items: GeneratedItem[] = results.map(({ ticker, quote, error }) => {
-    if (error || !quote) {
-      return { text: `${ticker}: data unavailable`, source: "Alpha Vantage" };
-    }
-    const price = parseFloat(quote["05. price"]).toFixed(2);
-    const change = parseFloat(quote["09. change"]);
-    const changePct = quote["10. change percent"];
-    const arrow = change >= 0 ? "▲" : "▼";
-    return {
-      text: `${ticker}  $${price}  ${arrow} ${changePct}`,
-      source: "Alpha Vantage",
-    };
-  });
+  const items: GeneratedItem[] = results.map(({ ticker, price, changePct }) => ({
+    text: `${ticker}  $${price}  ${changePct}`,
+    source: "Yahoo Finance",
+  }));
 
   return {
     sectionId: section.id,
@@ -148,6 +159,12 @@ export async function generateDigest(
   const generatedSections = await Promise.all(
     enabled.map(async (section): Promise<GeneratedSection> => {
       try {
+        if (section.type === "news") {
+          const result = await buildNewsSection(section);
+          console.log(`[digest/generate] "${section.title}" (news) → real data (NewsAPI)`);
+          return result;
+        }
+
         if (section.type === "sports") {
           const result = await buildSportsSection(section);
           console.log(`[digest/generate] "${section.title}" (sports) → real data (ESPN)`);
@@ -179,7 +196,10 @@ export async function generateDigest(
             console.log(`[digest/generate] "${section.title}" (finance/crypto) → real data (CoinGecko)`);
             return result;
           }
-          // No structured config — fall through to placeholder
+          // No structured config — default to market overview (SPY, AAPL, NVDA)
+          const result = await buildStocksSection(section);
+          console.log(`[digest/generate] "${section.title}" (finance/markets) → real data (Alpha Vantage)`);
+          return result;
         }
 
         // All other section types: show placeholder

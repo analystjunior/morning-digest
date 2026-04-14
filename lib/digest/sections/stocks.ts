@@ -1,45 +1,40 @@
-import type { StocksConfig } from "@/types";
-
-export interface GlobalQuote {
-  "01. symbol": string;
-  "02. open": string;
-  "03. high": string;
-  "04. low": string;
-  "05. price": string;
-  "06. volume": string;
-  "07. latest trading day": string;
-  "08. previous close": string;
-  "09. change": string;
-  "10. change percent": string;
-}
-
-export interface StockQuoteResult {
+export interface StockQuote {
   ticker: string;
-  quote: GlobalQuote | null;
-  error?: string;
+  price: string;
+  changePct: string;
 }
 
-export async function fetchStocksData(config: StocksConfig): Promise<StockQuoteResult[]> {
+interface AlphaVantageResponse {
+  "Global Quote"?: {
+    "01. symbol"?: string;
+    "05. price"?: string;
+    "10. change percent"?: string;
+  };
+  Note?: string;
+}
+
+export async function fetchStocksData(tickers: string[]): Promise<StockQuote[]> {
   const key = process.env.ALPHA_VANTAGE_API_KEY;
   if (!key) throw new Error("ALPHA_VANTAGE_API_KEY is not configured");
 
-  const results = await Promise.all(
-    config.tickers.map(async (ticker): Promise<StockQuoteResult> => {
-      try {
-        const res = await fetch(
-          `https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${encodeURIComponent(ticker)}&apikey=${key}`
-        );
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data = await res.json() as { "Global Quote": GlobalQuote };
-        const quote = data["Global Quote"];
-        if (!quote || !quote["01. symbol"]) throw new Error("Empty response from Alpha Vantage");
-        return { ticker, quote };
-      } catch (err) {
-        const message = err instanceof Error ? err.message : String(err);
-        return { ticker, quote: null, error: message };
-      }
-    })
+  const res = await fetch(
+    `https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=SPY&apikey=${key}`
   );
+  if (!res.ok) throw new Error(`Alpha Vantage fetch failed: HTTP ${res.status}`);
 
-  return results;
+  const data = await res.json() as AlphaVantageResponse;
+  const quote = data["Global Quote"];
+
+  if (!quote || !quote["05. price"]) {
+    return [{ ticker: "SPY", price: "N/A", changePct: "Market data unavailable" }];
+  }
+
+  const price = parseFloat(quote["05. price"]).toFixed(2);
+  const rawPct = quote["10. change percent"] ?? "0%";
+  const pct = parseFloat(rawPct);
+  const changePct = isNaN(pct)
+    ? `Market closed — last close: $${price}`
+    : `${pct >= 0 ? "+" : ""}${pct.toFixed(2)}%`;
+
+  return [{ ticker: "SPY", price, changePct }];
 }
