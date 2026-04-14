@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import {
   Mail, ArrowLeft, RefreshCw, Smartphone,
@@ -133,6 +133,9 @@ export default function PreviewPage() {
   const [viewMode, setViewMode] = useState<ViewMode>("email");
   const [digestHtml, setDigestHtml] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  // Ref guard prevents duplicate auto-generate calls when the store
+  // sets user and subscription as separate updates (each triggers the effect).
+  const autoGenStarted = useRef(false);
 
   useEffect(() => {
     if (!isOnboarded) loadDemoData();
@@ -159,9 +162,12 @@ export default function PreviewPage() {
     }
   };
 
-  // Trigger when subscription first becomes available (covers both initial load and store hydration)
+  // Auto-generate once when both subscription and user are available.
+  // The ref prevents double-firing when the store hydrates user and subscription
+  // as separate state updates (which would trigger this effect twice).
   useEffect(() => {
-    if (subscription && user && !digestHtml && !isLoading) {
+    if (subscription && user && !autoGenStarted.current) {
+      autoGenStarted.current = true;
       generate(subscription, user);
     }
   }, [subscription?.id, user?.id]);

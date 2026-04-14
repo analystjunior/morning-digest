@@ -3,8 +3,7 @@ import { twMerge } from "tailwind-merge";
 import { SectionType } from "./types";
 
 export const SECTION_TYPES: SectionType[] = [
-  "news", "sports", "finance", "social", "technology",
-  "entertainment", "weather", "quote", "custom",
+  "news", "sports", "finance", "weather", "quote", "custom",
 ];
 
 export function cn(...inputs: ClassValue[]) {

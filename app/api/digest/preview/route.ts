@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { PreviewDigestRequest, PreviewDigestResponse } from "@/lib/types";
-import { generateDigestHTML } from "@/lib/digest/agent";
+import { generateDigest, digestToHTML } from "@/lib/digest/generate";
 
 export async function POST(req: NextRequest) {
   try {
@@ -11,7 +11,10 @@ export async function POST(req: NextRequest) {
     }
 
     const userName = body.userName ?? "Friend";
-    const html = await generateDigestHTML(body.sections, userName);
+    const date = new Date().toISOString().split("T")[0];
+    const digest = await generateDigest(body.sections, date);
+    const html = digestToHTML(digest, userName);
+
     const response: PreviewDigestResponse = { html };
     return NextResponse.json(response, { status: 200 });
   } catch (err) {

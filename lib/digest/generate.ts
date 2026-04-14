@@ -2,71 +2,34 @@
  * lib/digest/generate.ts
  *
  * Core digest generation pipeline.
- * For each enabled section, fetches real data where available and falls back
- * to mock content for sections not yet wired to a live source.
+ * For each enabled section, fetches real data where available and shows a
+ * "Coming soon" placeholder for sections not yet wired to a live source.
  */
 
 import type { DigestSection, GeneratedDigest, GeneratedSection, GeneratedItem } from "@/lib/types";
 import { generateId } from "@/lib/utils";
-import { generateMockDigest } from "@/lib/mock-data";
 import { fetchStocksData } from "./sections/stocks";
 import { fetchCryptoData } from "./sections/crypto";
-import { fetchSportsData } from "./sections/sports";
+import { fetchSportsHeadlines } from "./sections/sports";
 import { fetchWeatherData } from "./sections/weather";
 import { fetchQuoteData } from "./sections/quote";
 
 // ── Sports ────────────────────────────────────────────────────────────────────
 
 async function buildSportsSection(section: DigestSection): Promise<GeneratedSection> {
-  const config = section.config ?? {};
-  const leagues = (config.leagues as string[] | undefined) ?? ["NBA"];
-  const teams = config.teams as string[] | undefined;
+  const limit = section.mode === "brief" ? 3 : 8;
+  const headlines = await fetchSportsHeadlines(limit);
 
-  const results = await fetchSportsData({ leagues, teams });
+  const items: GeneratedItem[] = headlines.map((h) => ({
+    text: h.title,
+    source: "ESPN",
+  }));
 
-  const items: GeneratedItem[] = results.flatMap(({ league, events, error }) => {
-    if (error) return [{ text: `${league}: ${error}` }];
-    if (!events.length) return [{ text: `${league}: No games scheduled` }];
-    return events.map((event) => {
-      const competitors = event.competitions?.[0]?.competitors ?? [];
-      const away = competitors.find((c) => c.homeAway === "away") ?? competitors[1];
-      const home = competitors.find((c) => c.homeAway === "home") ?? competitors[0];
-      const status = event.status?.type?.description ?? "";
-      const isFinal = status.toLowerCase().includes("final");
-      const isInProgress = status.toLowerCase().includes("in progress") || /^\d/.test(status);
-
-      if (away && home) {
-        const awayName = away.team.displayName;
-        const homeName = home.team.displayName;
-
-        if ((isFinal || isInProgress) && away.score && home.score) {
-          // "Atlanta Hawks 108, Cleveland Cavaliers 115 — Final"
-          return {
-            text: `${awayName} ${away.score}, ${homeName} ${home.score} — ${status}`,
-            source: "ESPN",
-          };
-        }
-        // Scheduled: "Atlanta Hawks vs. Cleveland Cavaliers — Scheduled"
-        return {
-          text: `${awayName} vs. ${homeName}${status ? ` — ${status}` : ""}`,
-          source: "ESPN",
-        };
-      }
-
-      // Fallback if competitors data is missing
-      return {
-        text: `${event.name}${status ? ` — ${status}` : ""}`,
-        source: "ESPN",
-      };
-    });
-  });
-
-  const limit = section.mode === "brief" ? 3 : items.length;
   return {
     sectionId: section.id,
     title: section.title,
     emoji: "🏆",
-    items: items.slice(0, limit),
+    items,
   };
 }
 
@@ -216,20 +179,17 @@ export async function generateDigest(
             console.log(`[digest/generate] "${section.title}" (finance/crypto) → real data (CoinGecko)`);
             return result;
           }
-          // No structured config — fall through to mock
+          // No structured config — fall through to placeholder
         }
 
-        // All other section types: use mock until their fetchers are built
-        const mock = generateMockDigest([section], date);
-        console.log(`[digest/generate] "${section.title}" (${section.type}) → mock data`);
-        return (
-          mock.sections[0] ?? {
-            sectionId: section.id,
-            title: section.title,
-            emoji: "📌",
-            items: [{ text: `${section.title} — content coming soon` }],
-          }
-        );
+        // All other section types: show placeholder
+        console.log(`[digest/generate] "${section.title}" (${section.type}) → coming soon`);
+        return {
+          sectionId: section.id,
+          title: section.title,
+          emoji: "📌",
+          items: [{ text: "Coming soon" }],
+        };
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
         console.log(`[digest/generate] "${section.title}" (${section.type}) → error: ${message}`);
@@ -253,4 +213,60 @@ export async function generateDigest(
     status: "pending",
     channels: [],
   };
+}
+
+// ── HTML formatter ────────────────────────────────────────────────────────────
+
+export function digestToHTML(digest: GeneratedDigest, userName: string): string {
+  const date = new Date().toLocaleDateString("en-US", {
+    weekday: "long", month: "long", day: "numeric",
+  });
+  const firstName = userName.split(" ")[0];
+
+  const sectionsHTML = digest.sections
+    .map((section, i) => {
+      const items = section.items
+        .map(
+          (item) => `
+          <div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:12px;">
+            <div style="margin-top:6px;width:6px;height:6px;min-width:6px;border-radius:50%;background:#1a1a1a;flex-shrink:0;"></div>
+            <div style="min-width:0;flex:1;">
+              <p style="margin:0;font-size:14px;line-height:1.6;color:#1a1a1a;">${item.text}</p>
+              ${item.source ? `<p style="margin:4px 0 0;font-size:11px;color:#888;">${item.source}</p>` : ""}
+            </div>
+          </div>`
+        )
+        .join("\n");
+
+      const sectionBlock = `
+      <div style="margin-bottom:24px;">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+          <span style="font-size:20px;">${section.emoji}</span>
+          <h2 style="margin:0;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.12em;color:#888;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">${section.title}</h2>
+        </div>
+        <div style="background:#f9f8f5;border:1px solid #eceae3;border-radius:8px;padding:16px;">
+          ${items}
+        </div>
+      </div>`;
+
+      const divider =
+        i < digest.sections.length - 1
+          ? `<hr style="border:none;border-top:1px solid #f0ede6;margin:0 0 24px;" />`
+          : "";
+
+      return sectionBlock + divider;
+    })
+    .join("\n");
+
+  return `<div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;max-width:600px;">
+  <div style="padding-bottom:24px;border-bottom:1px solid #f0ede6;margin-bottom:24px;">
+    <p style="margin:0 0 12px;font-size:13px;font-weight:600;color:#1a1a1a;">The Paper Route</p>
+    <h1 style="margin:0 0 4px;font-size:22px;font-weight:700;color:#1a1a1a;">Good morning, ${firstName} ☀️</h1>
+    <p style="margin:0;font-size:13px;color:#888;">${date} · Your personalized briefing</p>
+  </div>
+  ${sectionsHTML}
+  <div style="padding-top:20px;border-top:1px solid #f0ede6;text-align:center;">
+    <p style="margin:0;font-size:10px;letter-spacing:0.1em;color:#bbb;">THE PAPER ROUTE</p>
+  </div>
+</div>`;
 }

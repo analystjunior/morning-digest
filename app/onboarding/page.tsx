@@ -26,8 +26,7 @@ const STEPS = [
 ];
 
 const SECTION_TYPES: SectionType[] = [
-  "news", "sports", "finance", "social", "technology",
-  "entertainment", "weather", "quote", "custom",
+  "news", "sports", "finance", "weather", "quote", "custom",
 ];
 
 const DEFAULT_TITLES: Record<SectionType, string> = {
