@@ -12,9 +12,10 @@ import { useAppStore } from "@/lib/store";
 import { DigestSection, SectionType, DeliveryChannel } from "@/lib/types";
 import {
   SECTION_EMOJIS, SECTION_LABELS, TIMEZONES, cn, generateId,
-  isValidEmail, isValidPhone,
+  isValidEmail, isValidPhone, DEFAULT_CONFIG,
 } from "@/lib/utils";
 import { DIGEST_TEMPLATES } from "@/lib/mock-data";
+import { SectionConfig } from "@/components/ui/SectionConfig";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -141,6 +142,8 @@ function StepIndicator({ current }: { current: string }) {
   );
 }
 
+// SectionConfig and TickerInput are imported from @/components/ui/SectionConfig
+
 // ─── Section card ─────────────────────────────────────────────────────────────
 
 function SectionCard({
@@ -157,12 +160,13 @@ function SectionCard({
   const [expanded, setExpanded] = useState(index === 0);
 
   const handleTypeChange = (t: SectionType) => {
-    // Auto-fill title only if it's empty or still the default for the current type
     const isDefaultTitle = !section.title.trim() || section.title === DEFAULT_TITLES[section.type];
     onUpdate({
       ...section,
       type: t,
       title: isDefaultTitle ? DEFAULT_TITLES[t] : section.title,
+      config: DEFAULT_CONFIG[t] ?? {},
+      prompt: undefined,
     });
   };
 
@@ -229,7 +233,7 @@ function SectionCard({
             </div>
           </div>
 
-          {/* Title */}
+          {/* Section title */}
           <div>
             <label style={labelStyle}>
               Section title <span style={{ color: "#bbb", fontWeight: 400 }}>(optional — auto-filled above)</span>
@@ -243,62 +247,8 @@ function SectionCard({
             />
           </div>
 
-          {/* Instructions */}
-          <div>
-            <label style={labelStyle}>
-              Instructions <span style={{ color: "#bbb", fontWeight: 400 }}>(optional)</span>
-            </label>
-            <textarea
-              className="w-full rounded resize-none"
-              rows={2}
-              style={{ ...inputStyle, height: "auto" }}
-              placeholder="e.g. Focus on my team only, skip trade rumors"
-              value={section.prompt ?? ""}
-              onChange={(e) => onUpdate({ ...section, prompt: e.target.value })}
-            />
-          </div>
-
-          {/* Sources */}
-          <div>
-            <label style={labelStyle}>
-              Preferred sources <span style={{ color: "#bbb", fontWeight: 400 }}>(optional)</span>
-            </label>
-            <input
-              style={inputStyle}
-              className="rounded"
-              placeholder="e.g. ESPN, The Athletic, WSJ"
-              value={(section.sources ?? []).join(", ")}
-              onChange={(e) =>
-                onUpdate({
-                  ...section,
-                  sources: e.target.value.split(",").map((s) => s.trim()).filter(Boolean),
-                })
-              }
-            />
-            <p className="mt-1 text-[11px]" style={{ color: "#bbb" }}>Separate multiple with commas</p>
-          </div>
-
-          {/* Mode */}
-          <div>
-            <label style={labelStyle}>Detail level</label>
-            <div className="flex gap-2">
-              {(["brief", "detailed"] as const).map((m) => (
-                <button
-                  key={m}
-                  type="button"
-                  onClick={() => onUpdate({ ...section, mode: m })}
-                  className="flex-1 rounded py-2 text-xs font-medium transition-all"
-                  style={
-                    section.mode === m
-                      ? { backgroundColor: DARK, color: BG, border: `1px solid ${DARK}` }
-                      : { backgroundColor: CARD_BG, color: SECONDARY, border: `1px solid ${BORDER}` }
-                  }
-                >
-                  {m === "brief" ? "Brief (2–3 bullets)" : "Detailed (5+ bullets)"}
-                </button>
-              ))}
-            </div>
-          </div>
+          {/* Type-specific config */}
+          <SectionConfig section={section} onUpdate={onUpdate} />
         </div>
       )}
     </div>
@@ -376,6 +326,7 @@ function OnboardingContent() {
           id: generateId(),
           title: DEFAULT_TITLES["news"],
           type: "news",
+          config: DEFAULT_CONFIG["news"],
           order: sections.length,
           enabled: true,
           mode: "brief",

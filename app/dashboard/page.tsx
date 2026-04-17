@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -11,10 +11,15 @@ import toast from "react-hot-toast";
 import { useAppStore } from "@/lib/store";
 import { DigestSection, SectionType } from "@/lib/types";
 import {
-  SECTION_EMOJIS, SECTION_LABELS, TIMEZONES, cn, generateId, formatTime,
+  SECTION_EMOJIS, SECTION_LABELS, TIMEZONES, cn, generateId, formatTime, DEFAULT_CONFIG,
 } from "@/lib/utils";
 import Toggle from "@/components/ui/Toggle";
 import NavBar from "@/components/ui/NavBar";
+import { SectionConfig } from "@/components/ui/SectionConfig";
+
+const ALLOWED_SECTION_TYPES: SectionType[] = [
+  "news", "sports", "finance", "weather", "quote", "custom",
+];
 
 // ─── Style tokens ─────────────────────────────────────────────────────────────
 const BG      = "#E8E6DF";
@@ -40,11 +45,15 @@ function SectionEditor({
 }) {
   const [draft, setDraft] = useState<DigestSection>(section);
 
+  const handleTypeChange = (t: SectionType) => {
+    setDraft((d) => ({ ...d, type: t, config: DEFAULT_CONFIG[t] ?? {}, prompt: undefined }));
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
       <div
-        className="relative w-full max-w-lg rounded-t-2xl sm:rounded-xl p-6 shadow-2xl space-y-4"
+        className="relative w-full max-w-lg rounded-t-2xl sm:rounded-xl p-6 shadow-2xl space-y-4 overflow-y-auto max-h-[90vh]"
         style={{ backgroundColor: CARD, border: `1px solid ${BORDER}` }}
       >
         <div className="flex items-center justify-between">
@@ -76,11 +85,11 @@ function SectionEditor({
         <div>
           <label className="mb-2 block text-xs font-medium" style={{ color: SEC }}>Content type</label>
           <div className="flex flex-wrap gap-1.5">
-            {(["news","sports","finance","social","technology","entertainment","weather","quote","custom"] as SectionType[]).map((t) => (
+            {ALLOWED_SECTION_TYPES.map((t) => (
               <button
                 key={t}
                 type="button"
-                onClick={() => setDraft({ ...draft, type: t })}
+                onClick={() => handleTypeChange(t)}
                 className="flex items-center gap-1 rounded px-2.5 py-1 text-xs font-medium transition-all"
                 style={
                   draft.type === t
@@ -94,28 +103,8 @@ function SectionEditor({
           </div>
         </div>
 
-        <div>
-          <label className="mb-1.5 block text-xs font-medium" style={{ color: SEC }}>Instructions</label>
-          <textarea
-            className="w-full rounded resize-none"
-            style={{ ...inputStyle, height: "auto" }}
-            rows={2}
-            value={draft.prompt ?? ""}
-            onChange={(e) => setDraft({ ...draft, prompt: e.target.value })}
-          />
-        </div>
-
-        <div>
-          <label className="mb-1.5 block text-xs font-medium" style={{ color: SEC }}>Sources (comma-separated)</label>
-          <input
-            style={inputStyle}
-            className="rounded"
-            value={(draft.sources ?? []).join(", ")}
-            onChange={(e) =>
-              setDraft({ ...draft, sources: e.target.value.split(",").map((s) => s.trim()).filter(Boolean) })
-            }
-          />
-        </div>
+        {/* Type-specific config */}
+        <SectionConfig section={draft} onUpdate={setDraft} />
 
         <div className="flex gap-2 pt-1">
           <button
@@ -150,6 +139,8 @@ export default function DashboardPage() {
   const [showDeliveryEdit, setShowDeliveryEdit] = useState(false);
   const [deliveryTime, setDeliveryTime] = useState("");
   const [deliveryTz, setDeliveryTz] = useState("");
+  const [dragIdx, setDragIdx] = useState<number | null>(null);
+  const [dragOverIdx, setDragOverIdx] = useState<number | null>(null);
 
   useEffect(() => {
     if (!isOnboarded) router.replace("/onboarding");
@@ -195,6 +186,26 @@ export default function DashboardPage() {
       sections: sections.map((s) => (s.id === id ? { ...s, enabled: !s.enabled } : s)),
     });
   };
+
+  const handleDragStart = (i: number) => setDragIdx(i);
+
+  const handleDragOver = (e: React.DragEvent, i: number) => {
+    e.preventDefault();
+    setDragOverIdx(i);
+  };
+
+  const handleDrop = (e: React.DragEvent, i: number) => {
+    e.preventDefault();
+    if (dragIdx === null || dragIdx === i) { setDragIdx(null); setDragOverIdx(null); return; }
+    const reordered = [...sections];
+    const [moved] = reordered.splice(dragIdx, 1);
+    reordered.splice(i, 0, moved);
+    updateSubscription({ sections: reordered.map((s, idx) => ({ ...s, order: idx })) });
+    setDragIdx(null);
+    setDragOverIdx(null);
+  };
+
+  const handleDragEnd = () => { setDragIdx(null); setDragOverIdx(null); };
 
   const saveDelivery = () => {
     updateSubscription({ delivery: { ...delivery, time: deliveryTime, timezone: deliveryTz } });
@@ -277,7 +288,6 @@ export default function DashboardPage() {
               <h2 className="text-sm font-semibold" style={{ color: SEC }}>
                 My sections <span className="ml-1 font-normal" style={{ color: MUTED }}>({sections.length})</span>
               </h2>
-              <p className="text-xs" style={{ color: MUTED }}>Drag to reorder</p>
             </div>
 
             {/* Section cards */}
@@ -285,9 +295,18 @@ export default function DashboardPage() {
               {sections.map((section, i) => (
                 <div
                   key={section.id}
+                  draggable
+                  onDragStart={() => handleDragStart(i)}
+                  onDragOver={(e) => handleDragOver(e, i)}
+                  onDrop={(e) => handleDrop(e, i)}
+                  onDragEnd={handleDragEnd}
                   className="group flex items-center gap-3 rounded-lg p-4 transition-all"
                   style={
-                    section.enabled
+                    dragOverIdx === i && dragIdx !== i
+                      ? { backgroundColor: CARD, border: `1px solid ${DARK}`, opacity: 1 }
+                      : dragIdx === i
+                      ? { backgroundColor: "#f5f3ee", border: `1px dashed ${BORDER}`, opacity: 0.5 }
+                      : section.enabled
                       ? { backgroundColor: CARD, border: `1px solid ${BORDER}` }
                       : { backgroundColor: "#f5f3ee", border: `1px solid #e8e5de`, opacity: 0.7 }
                   }

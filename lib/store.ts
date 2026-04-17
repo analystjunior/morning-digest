@@ -29,11 +29,11 @@ function getDefaultOnboarding(): OnboardingState {
     step: "welcome",
     name: "",
     sections: [
-      { id: generateId(), title: "Today's Weather", type: "weather", order: 0, enabled: true, mode: "brief" },
-      { id: generateId(), title: "Morning Headlines", type: "news",    order: 1, enabled: true, mode: "brief" },
-      { id: generateId(), title: "Sports News",       type: "sports",  order: 2, enabled: true, mode: "brief" },
-      { id: generateId(), title: "Market Snapshot",   type: "finance", order: 3, enabled: true, mode: "brief" },
-      { id: generateId(), title: "Quote of the Day",  type: "quote",   order: 4, enabled: true, mode: "brief" },
+      { id: generateId(), title: "Today's Weather", type: "weather", config: { city: "New York" },                          order: 0, enabled: true, mode: "brief" },
+      { id: generateId(), title: "Morning Headlines", type: "news",   config: { category: "general" },                       order: 1, enabled: true, mode: "brief" },
+      { id: generateId(), title: "Sports News",       type: "sports", config: { leagues: [] },                               order: 2, enabled: true, mode: "brief" },
+      { id: generateId(), title: "Market Snapshot",   type: "finance",config: { tickers: ["SPY", "AAPL", "NVDA"] },          order: 3, enabled: true, mode: "brief" },
+      { id: generateId(), title: "Quote of the Day",  type: "quote",  config: { tone: "any" },                               order: 4, enabled: true, mode: "brief" },
     ],
     delivery: {
       time: "07:00",

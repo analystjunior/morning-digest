@@ -14,13 +14,18 @@ interface NewsAPIResponse {
   message?: string;
 }
 
-export async function fetchNewsHeadlines(limit = 5): Promise<NewsHeadline[]> {
+export async function fetchNewsHeadlines(limit = 5, category?: string): Promise<NewsHeadline[]> {
   const key = process.env.NEWS_API_KEY;
   if (!key) throw new Error("NEWS_API_KEY is not configured");
 
-  const res = await fetch(
-    `https://newsapi.org/v2/top-headlines?country=us&pageSize=${limit}&apiKey=${key}`
-  );
+  const params = new URLSearchParams({
+    country: "us",
+    pageSize: String(limit),
+    apiKey: key,
+  });
+  if (category && category !== "general") params.set("category", category.toLowerCase());
+
+  const res = await fetch(`https://newsapi.org/v2/top-headlines?${params}`);
   if (!res.ok) throw new Error(`NewsAPI fetch failed: HTTP ${res.status}`);
 
   const data = await res.json() as NewsAPIResponse;

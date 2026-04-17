@@ -13,28 +13,33 @@ interface AlphaVantageResponse {
   Note?: string;
 }
 
-export async function fetchStocksData(tickers: string[]): Promise<StockQuote[]> {
-  const key = process.env.ALPHA_VANTAGE_API_KEY;
-  if (!key) throw new Error("ALPHA_VANTAGE_API_KEY is not configured");
-
+async function fetchSingleQuote(symbol: string, key: string): Promise<StockQuote> {
   const res = await fetch(
-    `https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=SPY&apikey=${key}`
+    `https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${encodeURIComponent(symbol)}&apikey=${key}`
   );
-  if (!res.ok) throw new Error(`Alpha Vantage fetch failed: HTTP ${res.status}`);
+  if (!res.ok) return { ticker: symbol, price: "N/A", changePct: "fetch error" };
 
   const data = await res.json() as AlphaVantageResponse;
   const quote = data["Global Quote"];
 
   if (!quote || !quote["05. price"]) {
-    return [{ ticker: "SPY", price: "N/A", changePct: "Market data unavailable" }];
+    return { ticker: symbol, price: "N/A", changePct: "data unavailable" };
   }
 
   const price = parseFloat(quote["05. price"]).toFixed(2);
-  const rawPct = quote["10. change percent"] ?? "0%";
+  const rawPct = quote["10. change percent"] ?? "";
   const pct = parseFloat(rawPct);
   const changePct = isNaN(pct)
     ? `Market closed — last close: $${price}`
     : `${pct >= 0 ? "+" : ""}${pct.toFixed(2)}%`;
 
-  return [{ ticker: "SPY", price, changePct }];
+  return { ticker: symbol, price, changePct };
+}
+
+export async function fetchStocksData(tickers: string[]): Promise<StockQuote[]> {
+  const key = process.env.ALPHA_VANTAGE_API_KEY;
+  if (!key) throw new Error("ALPHA_VANTAGE_API_KEY is not configured");
+
+  const symbols = tickers.length > 0 ? tickers.slice(0, 3) : ["SPY"];
+  return Promise.all(symbols.map((s) => fetchSingleQuote(s, key)));
 }

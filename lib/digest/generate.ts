@@ -19,7 +19,8 @@ import { fetchNewsHeadlines } from "./sections/news";
 
 async function buildNewsSection(section: DigestSection): Promise<GeneratedSection> {
   const limit = section.mode === "brief" ? 3 : 5;
-  const headlines = await fetchNewsHeadlines(limit);
+  const category = (section.config?.category as string | undefined) ?? "general";
+  const headlines = await fetchNewsHeadlines(limit, category);
 
   const items: GeneratedItem[] = headlines.map((h) => ({
     text: h.title,
@@ -38,7 +39,8 @@ async function buildNewsSection(section: DigestSection): Promise<GeneratedSectio
 
 async function buildSportsSection(section: DigestSection): Promise<GeneratedSection> {
   const limit = section.mode === "brief" ? 3 : 8;
-  const headlines = await fetchSportsHeadlines(limit);
+  const leagues = (section.config?.leagues as string[] | undefined) ?? [];
+  const headlines = await fetchSportsHeadlines(limit, leagues);
 
   const items: GeneratedItem[] = headlines.map((h) => ({
     text: h.title,
@@ -129,13 +131,14 @@ async function buildWeatherSection(section: DigestSection): Promise<GeneratedSec
 // ── Quote ─────────────────────────────────────────────────────────────────────
 
 async function buildQuoteSection(section: DigestSection): Promise<GeneratedSection> {
+  const tone = (section.config?.tone as string | undefined) ?? "any";
   try {
-    const data = await fetchQuoteData();
+    const data = await fetchQuoteData(tone);
     return {
       sectionId: section.id,
       title: section.title,
       emoji: "💬",
-      items: [{ text: `"${data.quote}" — ${data.author}`, source: "Gemini" }],
+      items: [{ text: `"${data.quote}" — ${data.author}`, source: "ZenQuotes" }],
     };
   } catch (err) {
     console.error("[digest/generate] Quote fetch failed:", err);

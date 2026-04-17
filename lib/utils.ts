@@ -6,6 +6,15 @@ export const SECTION_TYPES: SectionType[] = [
   "news", "sports", "finance", "weather", "quote", "custom",
 ];
 
+export const DEFAULT_CONFIG: Partial<Record<SectionType, Record<string, unknown>>> = {
+  weather: { city: "New York" },
+  sports:  { leagues: [] },
+  news:    { category: "general" },
+  finance: { tickers: ["SPY", "AAPL", "NVDA"] },
+  quote:   { tone: "any" },
+  custom:  {},
+};
+
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
