@@ -18,7 +18,7 @@ import NavBar from "@/components/ui/NavBar";
 import { SectionConfig } from "@/components/ui/SectionConfig";
 
 const ALLOWED_SECTION_TYPES: SectionType[] = [
-  "news", "sports", "finance", "weather", "quote", "custom",
+  "news", "sports", "finance", "crypto", "weather", "quote", "custom",
 ];
 
 // ─── Style tokens ─────────────────────────────────────────────────────────────

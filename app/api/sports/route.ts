@@ -7,9 +7,10 @@ export async function GET(req: NextRequest) {
   const leagues = raw
     ? raw.split(",").map((l) => l.trim()).filter(Boolean)
     : [];
+  const limit = parseInt(req.nextUrl.searchParams.get("limit") ?? "10", 10) || 10;
 
   try {
-    const items = await fetchSportsHeadlines(10, leagues);
+    const items = await fetchSportsHeadlines(limit, leagues);
     return NextResponse.json({ items });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);

@@ -7,6 +7,7 @@ export type SectionType =
   | "finance"
   | "weather"
   | "quote"
+  | "crypto"
   | "entertainment"
   | "technology"
   | "custom";

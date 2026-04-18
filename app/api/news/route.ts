@@ -9,9 +9,10 @@ export async function GET(req: NextRequest) {
   }
 
   const category = req.nextUrl.searchParams.get("category") ?? "general";
+  const limit = parseInt(req.nextUrl.searchParams.get("limit") ?? "5", 10) || 5;
 
   try {
-    const headlines = await fetchNewsHeadlines(5, category);
+    const headlines = await fetchNewsHeadlines(limit, category);
     return NextResponse.json({ headlines });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);

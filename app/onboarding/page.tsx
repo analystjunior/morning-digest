@@ -27,13 +27,14 @@ const STEPS = [
 ];
 
 const SECTION_TYPES: SectionType[] = [
-  "news", "sports", "finance", "weather", "quote", "custom",
+  "news", "sports", "finance", "crypto", "weather", "quote", "custom",
 ];
 
 const DEFAULT_TITLES: Record<SectionType, string> = {
   news:          "Morning Headlines",
   sports:        "Sports News",
   finance:       "Market Snapshot",
+  crypto:        "Crypto Prices",
   social:        "Social Feed",
   technology:    "Tech News",
   entertainment: "Entertainment",

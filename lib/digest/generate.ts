@@ -18,13 +18,15 @@ import { fetchNewsHeadlines } from "./sections/news";
 // ── News ──────────────────────────────────────────────────────────────────────
 
 async function buildNewsSection(section: DigestSection): Promise<GeneratedSection> {
-  const limit = section.mode === "brief" ? 3 : 5;
-  const category = (section.config?.category as string | undefined) ?? "general";
-  const headlines = await fetchNewsHeadlines(limit, category);
+  const limit = (section.config?.limit as number | undefined) ?? (section.mode === "brief" ? 3 : 5);
+  const categories = (section.config?.categories as string[] | undefined)
+    ?? [(section.config?.category as string | undefined) ?? "general"];
+  const headlines = await fetchNewsHeadlines(limit, categories);
 
   const items: GeneratedItem[] = headlines.map((h) => ({
     text: h.title,
     source: h.source,
+    url: h.url,
   }));
 
   return {
@@ -38,13 +40,14 @@ async function buildNewsSection(section: DigestSection): Promise<GeneratedSectio
 // ── Sports ────────────────────────────────────────────────────────────────────
 
 async function buildSportsSection(section: DigestSection): Promise<GeneratedSection> {
-  const limit = section.mode === "brief" ? 3 : 8;
+  const limit = (section.config?.limit as number | undefined) ?? (section.mode === "brief" ? 3 : 8);
   const leagues = (section.config?.leagues as string[] | undefined) ?? [];
   const headlines = await fetchSportsHeadlines(limit, leagues);
 
   const items: GeneratedItem[] = headlines.map((h) => ({
     text: h.title,
     source: "ESPN",
+    url: h.link,
   }));
 
   return {
@@ -63,9 +66,10 @@ async function buildStocksSection(section: DigestSection): Promise<GeneratedSect
 
   const results = await fetchStocksData(tickers);
 
-  const items: GeneratedItem[] = results.map(({ ticker, price, changePct }) => ({
+  const items: GeneratedItem[] = results.map(({ ticker, price, changePct, url }) => ({
     text: `${ticker}  $${price}  ${changePct}`,
     source: "Yahoo Finance",
+    url,
   }));
 
   return {
@@ -80,17 +84,16 @@ async function buildStocksSection(section: DigestSection): Promise<GeneratedSect
 
 async function buildCryptoSection(section: DigestSection): Promise<GeneratedSection> {
   const config = section.config ?? {};
-  const coins = (config.coins as string[] | undefined) ?? ["bitcoin", "ethereum"];
+  const coins = (config.coins as string[] | undefined) ?? ["bitcoin", "ethereum", "solana"];
 
-  const data = await fetchCryptoData({ coins });
+  const data = await fetchCryptoData(coins);
 
-  const items: GeneratedItem[] = Object.entries(data).map(([coin, price]) => {
-    const change = price.usd_24h_change;
-    const arrow = change >= 0 ? "▲" : "▼";
-    const label = coin.charAt(0).toUpperCase() + coin.slice(1);
+  const items: GeneratedItem[] = data.map((coin) => {
+    const arrow = coin.change24h >= 0 ? "▲" : "▼";
     return {
-      text: `${label}  $${price.usd.toLocaleString()}  ${arrow} ${Math.abs(change).toFixed(2)}% (24h)`,
+      text: `${coin.name} (${coin.symbol})  $${coin.price.toLocaleString()}  ${arrow} ${Math.abs(coin.change24h).toFixed(2)}% (24h)`,
       source: "CoinGecko",
+      url: coin.url,
     };
   });
 
@@ -183,25 +186,19 @@ export async function generateDigest(
 
         if (section.type === "quote") {
           const result = await buildQuoteSection(section);
-          console.log(`[digest/generate] "${section.title}" (quote) → real data (Gemini)`);
+          console.log(`[digest/generate] "${section.title}" (quote) → real data (ZenQuotes)`);
           return result;
         }
 
         if (section.type === "finance") {
-          const config = section.config ?? {};
-          if (config.tickers) {
-            const result = await buildStocksSection(section);
-            console.log(`[digest/generate] "${section.title}" (finance/stocks) → real data (Alpha Vantage)`);
-            return result;
-          }
-          if (config.coins) {
-            const result = await buildCryptoSection(section);
-            console.log(`[digest/generate] "${section.title}" (finance/crypto) → real data (CoinGecko)`);
-            return result;
-          }
-          // No structured config — default to market overview (SPY, AAPL, NVDA)
           const result = await buildStocksSection(section);
-          console.log(`[digest/generate] "${section.title}" (finance/markets) → real data (Alpha Vantage)`);
+          console.log(`[digest/generate] "${section.title}" (finance) → real data (Alpha Vantage)`);
+          return result;
+        }
+
+        if (section.type === "crypto") {
+          const result = await buildCryptoSection(section);
+          console.log(`[digest/generate] "${section.title}" (crypto) → real data (CoinGecko)`);
           return result;
         }
 
@@ -250,14 +247,19 @@ export function digestToHTML(digest: GeneratedDigest, userName: string): string 
     .map((section, i) => {
       const items = section.items
         .map(
-          (item) => `
+          (item) => {
+            const headline = item.url
+              ? `<a href="${item.url}" target="_blank" rel="noopener noreferrer" style="color:#1a1a1a;text-decoration:none;">${item.text}<span style="margin-left:4px;color:#bbb;font-size:11px;">↗</span></a>`
+              : `<span style="color:#1a1a1a;">${item.text}</span>`;
+            return `
           <div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:12px;">
             <div style="margin-top:6px;width:6px;height:6px;min-width:6px;border-radius:50%;background:#1a1a1a;flex-shrink:0;"></div>
             <div style="min-width:0;flex:1;">
-              <p style="margin:0;font-size:14px;line-height:1.6;color:#1a1a1a;">${item.text}</p>
+              <p style="margin:0;font-size:14px;line-height:1.6;">${headline}</p>
               ${item.source ? `<p style="margin:4px 0 0;font-size:11px;color:#888;">${item.source}</p>` : ""}
             </div>
-          </div>`
+          </div>`;
+          }
         )
         .join("\n");
 

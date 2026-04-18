@@ -3,14 +3,15 @@ import { twMerge } from "tailwind-merge";
 import { SectionType } from "./types";
 
 export const SECTION_TYPES: SectionType[] = [
-  "news", "sports", "finance", "weather", "quote", "custom",
+  "news", "sports", "finance", "crypto", "weather", "quote", "custom",
 ];
 
 export const DEFAULT_CONFIG: Partial<Record<SectionType, Record<string, unknown>>> = {
   weather: { city: "New York" },
   sports:  { leagues: [] },
-  news:    { category: "general" },
-  finance: { tickers: ["SPY", "AAPL", "NVDA"] },
+  news:    { categories: ["general"] },
+  finance: { tickers: [] },
+  crypto:  { coins: [] },
   quote:   { tone: "any" },
   custom:  {},
 };
@@ -29,6 +30,7 @@ export const SECTION_EMOJIS: Record<SectionType, string> = {
   sports: "🏀",
   social: "📱",
   finance: "📈",
+  crypto: "🪙",
   weather: "🌤",
   quote: "💬",
   entertainment: "🎬",
@@ -42,6 +44,7 @@ export const SECTION_LABELS: Record<SectionType, string> = {
   sports: "Sports",
   social: "Social Media",
   finance: "Finance & Markets",
+  crypto: "Crypto",
   weather: "Weather",
   quote: "Quote / Inspiration",
   entertainment: "Entertainment",
