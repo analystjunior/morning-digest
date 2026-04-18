@@ -2,6 +2,7 @@ export interface HeadlineItem {
   title: string;
   link?: string;
   pubDate?: string;
+  league?: string;
 }
 
 interface LeagueConfig {
@@ -92,7 +93,7 @@ export async function fetchSportsHeadlines(limit = 8, leagues: string[] = []): P
       if (added >= alloc) break;
       if (!seen.has(item.title)) {
         seen.add(item.title);
-        merged.push(item);
+        merged.push({ ...item, league: l });
         added++;
       }
     }

@@ -38,6 +38,8 @@ async function fetchSingleQuote(symbol: string, key: string): Promise<StockQuote
   return { ticker: symbol, price, changePct, url };
 }
 
+const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
 export async function fetchStocksData(tickers: string[]): Promise<StockQuote[]> {
   const key = process.env.ALPHA_VANTAGE_API_KEY;
   if (!key) throw new Error("ALPHA_VANTAGE_API_KEY is not configured");
@@ -45,8 +47,13 @@ export async function fetchStocksData(tickers: string[]): Promise<StockQuote[]> 
   const symbols = tickers.length > 0 ? tickers : ["SPY"];
   const results: StockQuote[] = [];
   for (let i = 0; i < symbols.length; i++) {
-    if (i > 0) await new Promise((resolve) => setTimeout(resolve, 500));
-    results.push(await fetchSingleQuote(symbols[i], key));
+    if (i > 0) await delay(1000);
+    let quote = await fetchSingleQuote(symbols[i], key);
+    if (quote.price === "N/A") {
+      await delay(1000);
+      quote = await fetchSingleQuote(symbols[i], key);
+    }
+    results.push(quote);
   }
   return results;
 }

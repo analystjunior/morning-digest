@@ -27,6 +27,7 @@ async function buildNewsSection(section: DigestSection): Promise<GeneratedSectio
     text: h.title,
     source: h.source,
     url: h.url,
+    group: categories.length > 1 ? (h.category ? h.category.charAt(0).toUpperCase() + h.category.slice(1) : undefined) : undefined,
   }));
 
   return {
@@ -48,6 +49,7 @@ async function buildSportsSection(section: DigestSection): Promise<GeneratedSect
     text: h.title,
     source: "ESPN",
     url: h.link,
+    group: leagues.length > 1 ? h.league : undefined,
   }));
 
   return {
@@ -245,13 +247,19 @@ export function digestToHTML(digest: GeneratedDigest, userName: string): string 
 
   const sectionsHTML = digest.sections
     .map((section, i) => {
+      let currentGroup: string | undefined = undefined;
       const items = section.items
-        .map(
-          (item) => {
-            const headline = item.url
-              ? `<a href="${item.url}" target="_blank" rel="noopener noreferrer" style="color:#1a1a1a;text-decoration:none;">${item.text}<span style="margin-left:4px;color:#bbb;font-size:11px;">↗</span></a>`
-              : `<span style="color:#1a1a1a;">${item.text}</span>`;
-            return `
+        .map((item, idx) => {
+          let groupHeader = "";
+          if (item.group && item.group !== currentGroup) {
+            const isFirst = idx === 0;
+            currentGroup = item.group;
+            groupHeader = `<div style="margin:${isFirst ? "0" : "12px"} 0 8px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#111;">${item.group}</div>`;
+          }
+          const headline = item.url
+            ? `<a href="${item.url}" target="_blank" rel="noopener noreferrer" style="color:#1a1a1a;text-decoration:none;">${item.text}<span style="margin-left:4px;color:#bbb;font-size:11px;">↗</span></a>`
+            : `<span style="color:#1a1a1a;">${item.text}</span>`;
+          const bullet = `
           <div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:12px;">
             <div style="margin-top:6px;width:6px;height:6px;min-width:6px;border-radius:50%;background:#1a1a1a;flex-shrink:0;"></div>
             <div style="min-width:0;flex:1;">
@@ -259,15 +267,14 @@ export function digestToHTML(digest: GeneratedDigest, userName: string): string 
               ${item.source ? `<p style="margin:4px 0 0;font-size:11px;color:#888;">${item.source}</p>` : ""}
             </div>
           </div>`;
-          }
-        )
+          return groupHeader + bullet;
+        })
         .join("\n");
 
       const sectionBlock = `
       <div style="margin-bottom:24px;">
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
-          <span style="font-size:20px;">${section.emoji}</span>
-          <h2 style="margin:0;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.12em;color:#888;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">${section.title}</h2>
+        <div style="margin-bottom:12px;">
+          <h2 style="margin:0;font-size:15px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:#333;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">${section.title}</h2>
         </div>
         <div style="background:#f9f8f5;border:1px solid #eceae3;border-radius:8px;padding:16px;">
           ${items}

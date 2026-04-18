@@ -18,8 +18,17 @@ import NavBar from "@/components/ui/NavBar";
 import { SectionConfig } from "@/components/ui/SectionConfig";
 
 const ALLOWED_SECTION_TYPES: SectionType[] = [
-  "news", "sports", "finance", "crypto", "weather", "quote", "custom",
+  "weather", "news", "sports", "finance", "crypto", "quote",
 ];
+
+const DASH_EMOJIS: Partial<Record<SectionType, string>> = {
+  weather: "⛅",
+  news: "📰",
+  sports: "🏆",
+  finance: "📈",
+  crypto: "🌑",
+  quote: "💬",
+};
 
 // ─── Style tokens ─────────────────────────────────────────────────────────────
 const BG      = "#E8E6DF";
@@ -97,7 +106,7 @@ function SectionEditor({
                     : { backgroundColor: "#f5f3ee", color: SEC, border: `1px solid ${BORDER}` }
                 }
               >
-                {SECTION_EMOJIS[t]} {SECTION_LABELS[t]}
+                {DASH_EMOJIS[t] ?? SECTION_EMOJIS[t]} {SECTION_LABELS[t]}
               </button>
             ))}
           </div>
@@ -320,7 +329,7 @@ export default function DashboardPage() {
                     {i + 1}
                   </div>
 
-                  <span className="text-xl">{SECTION_EMOJIS[section.type]}</span>
+                  <span className="text-xl shrink-0">{DASH_EMOJIS[section.type] ?? SECTION_EMOJIS[section.type]}</span>
 
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-medium" style={{ color: DARK }}>{section.title}</p>

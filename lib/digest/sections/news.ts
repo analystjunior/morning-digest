@@ -2,6 +2,7 @@ export interface NewsHeadline {
   title: string;
   source: string;
   url?: string;
+  category?: string;
 }
 
 interface NewsAPIArticle {
@@ -37,6 +38,7 @@ async function fetchCategoryHeadlines(category: string, key: string, limit: numb
       title: a.title!,
       source: a.source?.name ?? "NewsAPI",
       url: a.url,
+      category,
     }));
 }
 

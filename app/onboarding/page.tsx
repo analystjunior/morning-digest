@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   ArrowRight, ArrowLeft, Check, Plus, Trash2,
-  Mail, MessageSquare, Clock, ChevronDown, Sparkles,
+  Mail, MessageSquare, Clock, ChevronDown, GripVertical,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { useAppStore } from "@/lib/store";
@@ -14,8 +14,8 @@ import {
   SECTION_EMOJIS, SECTION_LABELS, TIMEZONES, cn, generateId,
   isValidEmail, isValidPhone, DEFAULT_CONFIG,
 } from "@/lib/utils";
-import { DIGEST_TEMPLATES } from "@/lib/mock-data";
 import { SectionConfig } from "@/components/ui/SectionConfig";
+import Toggle from "@/components/ui/Toggle";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -27,30 +27,30 @@ const STEPS = [
 ];
 
 const SECTION_TYPES: SectionType[] = [
-  "news", "sports", "finance", "crypto", "weather", "quote", "custom",
+  "weather", "news", "sports", "finance", "crypto", "quote",
 ];
 
 const DEFAULT_TITLES: Record<SectionType, string> = {
+  weather:       "Today's Weather",
   news:          "Morning Headlines",
   sports:        "Sports News",
   finance:       "Market Snapshot",
   crypto:        "Crypto Prices",
+  quote:         "Quote of the Day",
+  custom:        "Custom Section",
   social:        "Social Feed",
   technology:    "Tech News",
   entertainment: "Entertainment",
-  weather:       "Today's Weather",
-  quote:         "Quote of the Day",
-  custom:        "Custom Section",
 };
 
 // ─── Shared style tokens ──────────────────────────────────────────────────────
 
-const BG = "#E8E6DF";
-const DARK = "#1a1a1a";
-const BORDER = "#d4d0c8";
-const MUTED = "#888";
+const BG       = "#E8E6DF";
+const DARK     = "#1a1a1a";
+const BORDER   = "#d4d0c8";
+const MUTED    = "#888";
 const SECONDARY = "#555";
-const CARD_BG = "white";
+const CARD_BG  = "white";
 
 const inputStyle: React.CSSProperties = {
   backgroundColor: CARD_BG,
@@ -124,10 +124,7 @@ function StepIndicator({ current }: { current: string }) {
             >
               {i < idx ? <Check className="h-3.5 w-3.5" /> : i + 1}
             </div>
-            <span
-              className="text-[10px] font-medium"
-              style={{ color: i === idx ? DARK : "#bbb" }}
-            >
+            <span className="text-[10px] font-medium" style={{ color: i === idx ? DARK : "#bbb" }}>
               {step.label}
             </span>
           </div>
@@ -143,8 +140,6 @@ function StepIndicator({ current }: { current: string }) {
   );
 }
 
-// SectionConfig and TickerInput are imported from @/components/ui/SectionConfig
-
 // ─── Section card ─────────────────────────────────────────────────────────────
 
 function SectionCard({
@@ -152,13 +147,23 @@ function SectionCard({
   onUpdate,
   onRemove,
   index,
+  isDragOver,
+  onDragStart,
+  onDragOver,
+  onDrop,
+  onDragEnd,
 }: {
   section: DigestSection;
   onUpdate: (s: DigestSection) => void;
   onRemove: () => void;
   index: number;
+  isDragOver: boolean;
+  onDragStart: () => void;
+  onDragOver: (e: React.DragEvent) => void;
+  onDrop: (e: React.DragEvent) => void;
+  onDragEnd: () => void;
 }) {
-  const [expanded, setExpanded] = useState(index === 0);
+  const [expanded, setExpanded] = useState(false);
 
   const handleTypeChange = (t: SectionType) => {
     const isDefaultTitle = !section.title.trim() || section.title === DEFAULT_TITLES[section.type];
@@ -175,21 +180,37 @@ function SectionCard({
 
   return (
     <div
-      className="overflow-hidden rounded-lg"
-      style={{ backgroundColor: CARD_BG, border: `1px solid ${BORDER}` }}
+      draggable
+      onDragStart={onDragStart}
+      onDragOver={onDragOver}
+      onDrop={onDrop}
+      onDragEnd={onDragEnd}
+      className="overflow-hidden rounded-lg transition-all"
+      style={{
+        backgroundColor: CARD_BG,
+        border: isDragOver ? `1px solid ${DARK}` : `1px solid ${BORDER}`,
+        opacity: section.enabled ? 1 : 0.55,
+      }}
     >
-      {/* Header row — always visible */}
-      <div className="flex items-center gap-3 px-4 py-3">
-        {/* Left: toggle expand */}
+      {/* Header row */}
+      <div className="flex items-center gap-2 px-3 py-3">
+        <GripVertical className="h-4 w-4 shrink-0 cursor-grab" style={{ color: "#ccc" }} />
+
+        {/* Expand toggle */}
         <button
           type="button"
-          className="flex flex-1 items-center gap-3 text-left min-w-0"
+          className="flex flex-1 items-center gap-2 text-left min-w-0"
           onClick={() => setExpanded((v) => !v)}
         >
           <span className="text-lg shrink-0">{SECTION_EMOJIS[section.type]}</span>
           <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-medium" style={{ color: DARK }}>{displayTitle}</p>
-            <p className="text-xs" style={{ color: MUTED }}>{SECTION_LABELS[section.type]}</p>
+            <p
+              className="truncate text-sm font-medium"
+              style={{ color: section.enabled ? DARK : MUTED }}
+            >
+              {displayTitle}
+            </p>
+            <p className="text-xs" style={{ color: "#bbb" }}>{SECTION_LABELS[section.type]}</p>
           </div>
           <ChevronDown
             className={cn("h-4 w-4 shrink-0 transition-transform", expanded && "rotate-180")}
@@ -197,15 +218,21 @@ function SectionCard({
           />
         </button>
 
-        {/* Right: delete — always visible */}
+        {/* Enable/disable toggle */}
+        <Toggle
+          size="sm"
+          checked={section.enabled}
+          onChange={(v) => onUpdate({ ...section, enabled: v })}
+        />
+
+        {/* Delete */}
         <button
           type="button"
           onClick={onRemove}
-          className="shrink-0 flex items-center gap-1 rounded px-2 py-1 text-xs font-medium transition-colors hover:bg-red-50"
-          style={{ color: "#c0392b", border: `1px solid #f5c6c6`, borderRadius: "4px" }}
+          className="shrink-0 rounded p-1.5 transition-colors hover:bg-red-50"
+          style={{ color: "#c0392b" }}
         >
           <Trash2 className="h-3.5 w-3.5" />
-          <span className="hidden sm:inline">Remove</span>
         </button>
       </div>
 
@@ -213,7 +240,6 @@ function SectionCard({
       {expanded && (
         <div className="space-y-4 px-4 pb-4" style={{ borderTop: `1px solid #ece9e2` }}>
           <div className="pt-4">
-            {/* Content type selector — always shown and always changeable */}
             <label style={labelStyle}>Content type</label>
             <div className="flex flex-wrap gap-1.5">
               {SECTION_TYPES.map((t) => (
@@ -234,10 +260,10 @@ function SectionCard({
             </div>
           </div>
 
-          {/* Section title */}
           <div>
             <label style={labelStyle}>
-              Section title <span style={{ color: "#bbb", fontWeight: 400 }}>(optional — auto-filled above)</span>
+              Section title{" "}
+              <span style={{ color: "#bbb", fontWeight: 400 }}>(optional)</span>
             </label>
             <input
               style={inputStyle}
@@ -248,7 +274,6 @@ function SectionCard({
             />
           </div>
 
-          {/* Type-specific config */}
           <SectionConfig section={section} onUpdate={onUpdate} />
         </div>
       )}
@@ -266,13 +291,10 @@ function OnboardingContent() {
   const { onboarding, updateOnboarding, setOnboardingStep, completeOnboarding } = useAppStore();
   const { step, name, sections, delivery } = onboarding;
 
+  // Legacy template deep-link support (keeps existing URLs working)
   useEffect(() => {
     if (templateId && sections.length === 0) {
-      const template = DIGEST_TEMPLATES.find((t) => t.id === templateId);
-      if (template) {
-        const loaded = template.sections.map((s, i) => ({ ...s, id: generateId(), order: i }));
-        updateOnboarding({ sections: loaded, templateId });
-      }
+      // No-op: templates removed from UI but deep-links shouldn't crash
     }
   }, [templateId]);
 
@@ -299,24 +321,18 @@ function OnboardingContent() {
   };
 
   // ── Topics ─────────────────────────────────────────────────────────────────
-  const [previewTemplateId, setPreviewTemplateId] = useState<string | null>(null);
+  const [dragIdx, setDragIdx] = useState<number | null>(null);
+  const [dragOverIdx, setDragOverIdx] = useState<number | null>(null);
 
-  const applyTemplate = (templateId: string, mode: "replace" | "add") => {
-    const template = DIGEST_TEMPLATES.find((t) => t.id === templateId);
-    if (!template) return;
-    const loaded = template.sections.map((s, i) => ({
-      ...s, id: generateId(), order: (mode === "add" ? sections.length : 0) + i,
-    }));
-    updateOnboarding({
-      sections: mode === "replace" ? loaded : [...sections, ...loaded],
-      templateId,
-    });
-    setPreviewTemplateId(null);
-    toast.success(
-      mode === "replace"
-        ? `Applied "${template.name}" template`
-        : `Added "${template.name}" sections`
-    );
+  const handleDrop = (e: React.DragEvent, toIdx: number) => {
+    e.preventDefault();
+    if (dragIdx === null || dragIdx === toIdx) { setDragIdx(null); setDragOverIdx(null); return; }
+    const reordered = [...sections];
+    const [moved] = reordered.splice(dragIdx, 1);
+    reordered.splice(toIdx, 0, moved);
+    updateOnboarding({ sections: reordered.map((s, i) => ({ ...s, order: i })) });
+    setDragIdx(null);
+    setDragOverIdx(null);
   };
 
   const addSection = () => {
@@ -342,9 +358,9 @@ function OnboardingContent() {
   const removeSection = (id: string) =>
     updateOnboarding({ sections: sections.filter((s) => s.id !== id) });
 
-  // Only requires at least one section — no title check
   const handleTopicsNext = () => {
-    if (sections.length === 0) { toast.error("Add at least one section to your digest"); return; }
+    const hasEnabled = sections.some((s) => s.enabled);
+    if (!hasEnabled) { toast.error("Enable at least one section for your digest"); return; }
     setOnboardingStep("delivery");
   };
 
@@ -501,7 +517,7 @@ function OnboardingContent() {
                   Build your digest
                 </h1>
                 <p className="text-sm" style={{ color: "#666" }}>
-                  Add the sections you want in your morning briefing.
+                  Toggle sections on or off. Expand any section to configure it.
                 </p>
               </div>
               <button
@@ -513,143 +529,41 @@ function OnboardingContent() {
               </button>
             </div>
 
-            {/* Template quickstart */}
-            <div
-              className="rounded-lg p-4"
-              style={{ backgroundColor: CARD_BG, border: `1px solid ${BORDER}` }}
-            >
-              <p
-                className="mb-3 flex items-center gap-1.5 text-xs font-medium"
-                style={{ color: SECONDARY }}
-              >
-                <Sparkles className="h-3.5 w-3.5" /> Start from a template
-              </p>
-
-              {/* Template tiles */}
-              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-                {DIGEST_TEMPLATES.map((t) => {
-                  const active = previewTemplateId === t.id;
-                  return (
-                    <button
-                      key={t.id}
-                      type="button"
-                      onClick={() => setPreviewTemplateId(active ? null : t.id)}
-                      className="flex items-center gap-2 rounded p-2.5 text-left text-xs font-medium transition-all"
-                      style={{
-                        backgroundColor: active ? DARK : "#f5f3ee",
-                        border: `1px solid ${active ? DARK : "#e0ddd6"}`,
-                        color: active ? BG : DARK,
-                      }}
-                    >
-                      <span className="text-base">{t.emoji}</span>
-                      {t.name}
-                    </button>
-                  );
-                })}
-              </div>
-
-              {/* Inline preview panel */}
-              {previewTemplateId && (() => {
-                const t = DIGEST_TEMPLATES.find((t) => t.id === previewTemplateId)!;
-                const hasExisting = sections.length > 0;
-                return (
-                  <div className="mt-3 rounded-lg p-3 space-y-3" style={{ backgroundColor: "#f5f3ee", border: `1px solid #e0ddd6` }}>
-                    <div>
-                      <p className="text-xs font-semibold mb-0.5" style={{ color: DARK }}>{t.emoji} {t.name}</p>
-                      <p className="text-xs" style={{ color: MUTED }}>{t.description}</p>
-                    </div>
-
-                    {/* Section list preview */}
-                    <div className="space-y-1.5">
-                      {t.sections.map((s, i) => (
-                        <div key={i} className="flex items-center gap-2">
-                          <span className="text-sm">{SECTION_EMOJIS[s.type]}</span>
-                          <span className="text-xs" style={{ color: SECONDARY }}>{s.title}</span>
-                          <span
-                            className="ml-auto text-[10px] rounded px-1.5 py-0.5"
-                            style={{ backgroundColor: "#e8e5de", color: MUTED }}
-                          >
-                            {s.mode}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-
-                    {/* Apply actions */}
-                    {hasExisting ? (
-                      <div className="pt-1 space-y-2">
-                        <p className="text-xs font-medium" style={{ color: SECONDARY }}>
-                          You already have sections — what would you like to do?
-                        </p>
-                        <div className="flex gap-2">
-                          <button
-                            type="button"
-                            onClick={() => applyTemplate(t.id, "replace")}
-                            className="flex-1 rounded py-1.5 text-xs font-medium transition-opacity hover:opacity-80"
-                            style={{ backgroundColor: DARK, color: BG, border: `1px solid ${DARK}` }}
-                          >
-                            Replace existing
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => applyTemplate(t.id, "add")}
-                            className="flex-1 rounded py-1.5 text-xs font-medium transition-opacity hover:opacity-80"
-                            style={{ backgroundColor: CARD_BG, color: DARK, border: `1px solid ${BORDER}` }}
-                          >
-                            Add to existing
-                          </button>
-                        </div>
-                      </div>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={() => applyTemplate(t.id, "replace")}
-                        className="w-full rounded py-1.5 text-xs font-medium transition-opacity hover:opacity-80"
-                        style={{ backgroundColor: DARK, color: BG, border: `1px solid ${DARK}` }}
-                      >
-                        Use this template
-                      </button>
-                    )}
-                  </div>
-                );
-              })()}
+            {/* Section list */}
+            <div className="space-y-2">
+              {sections.map((s, i) => (
+                <SectionCard
+                  key={s.id}
+                  section={s}
+                  index={i}
+                  isDragOver={dragOverIdx === i && dragIdx !== i}
+                  onDragStart={() => setDragIdx(i)}
+                  onDragOver={(e) => { e.preventDefault(); setDragOverIdx(i); }}
+                  onDrop={(e) => handleDrop(e, i)}
+                  onDragEnd={() => { setDragIdx(null); setDragOverIdx(null); }}
+                  onUpdate={(updated) => updateSection(s.id, updated)}
+                  onRemove={() => removeSection(s.id)}
+                />
+              ))}
             </div>
 
-            {/* Section list */}
-            {sections.length > 0 && (
-              <div className="space-y-3">
-                {sections.map((s, i) => (
-                  <SectionCard
-                    key={s.id}
-                    section={s}
-                    index={i}
-                    onUpdate={(updated) => updateSection(s.id, updated)}
-                    onRemove={() => removeSection(s.id)}
-                  />
-                ))}
-              </div>
-            )}
-
-            {/* Add section — prominent primary button */}
+            {/* Add section */}
             <button
               type="button"
               onClick={addSection}
-              style={btnPrimary}
-              className="transition-opacity hover:opacity-80"
+              className="flex w-full items-center justify-center gap-2 rounded-lg py-3 text-sm font-medium transition-opacity hover:opacity-70"
+              style={{ border: `1px dashed ${BORDER}`, color: SECONDARY, backgroundColor: "transparent" }}
             >
               <Plus className="h-4 w-4" /> Add section
             </button>
 
-            {/* Continue — secondary, only shown once there's a section */}
-            {sections.length > 0 && (
-              <button
-                onClick={handleTopicsNext}
-                style={btnSecondary}
-                className="transition-opacity hover:opacity-70"
-              >
-                Continue to delivery <ArrowRight className="h-4 w-4" />
-              </button>
-            )}
+            <button
+              onClick={handleTopicsNext}
+              style={btnPrimary}
+              className="transition-opacity hover:opacity-80"
+            >
+              Continue to delivery <ArrowRight className="h-4 w-4" />
+            </button>
           </div>
         )}
 
@@ -714,7 +628,6 @@ function OnboardingContent() {
               </div>
             </div>
 
-            {/* Channel reminder */}
             <div
               className="rounded-lg p-4"
               style={{ backgroundColor: CARD_BG, border: `1px solid ${BORDER}` }}
@@ -782,21 +695,26 @@ function OnboardingContent() {
                 </button>
               </div>
               {sections.map((s) => (
-                <div key={s.id} className="flex items-center gap-3">
+                <div
+                  key={s.id}
+                  className="flex items-center gap-3"
+                  style={{ opacity: s.enabled ? 1 : 0.45 }}
+                >
                   <span className="text-base">{SECTION_EMOJIS[s.type]}</span>
                   <div className="min-w-0 flex-1">
                     <p className="text-sm" style={{ color: DARK }}>
                       {s.title.trim() || DEFAULT_TITLES[s.type]}
                     </p>
-                    {s.sources && s.sources.length > 0 && (
-                      <p className="text-xs" style={{ color: MUTED }}>Sources: {s.sources.join(", ")}</p>
-                    )}
                   </div>
                   <span
                     className="rounded px-2 py-0.5 text-xs font-medium"
-                    style={{ backgroundColor: "#f5f3ee", border: `1px solid #e0ddd6`, color: SECONDARY }}
+                    style={{
+                      backgroundColor: s.enabled ? "#f5f3ee" : "#ece9e2",
+                      border: `1px solid #e0ddd6`,
+                      color: s.enabled ? SECONDARY : MUTED,
+                    }}
                   >
-                    {s.mode}
+                    {s.enabled ? "on" : "off"}
                   </span>
                 </div>
               ))}

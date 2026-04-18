@@ -27,7 +27,7 @@ function SMSPreview({ sections, userName }: { sections: GeneratedDigest["section
     `☀️ The Paper Route — ${date}`,
     `Hey ${userName.split(" ")[0]}! Here's your briefing:\n`,
     ...sections.map((section) => {
-      const bullets = section.items.slice(0, 2).map((item) => `• ${item.text}`).join("\n");
+      const bullets = section.items.map((item) => `• ${item.text}`).join("\n");
       return `${section.emoji} *${section.title}*\n${bullets}`;
     }),
     "\n—\nReply STOP to unsubscribe. The Paper Route",
@@ -42,7 +42,7 @@ function SMSPreview({ sections, userName }: { sections: GeneratedDigest["section
         <div className="mb-4 flex items-center justify-center">
           <div className="h-1.5 w-16 rounded-full" style={{ backgroundColor: "#3a3a3c" }} />
         </div>
-        <div className="rounded-2xl p-4 min-h-[500px]" style={{ backgroundColor: "#f2f2f7" }}>
+        <div className="rounded-2xl p-4" style={{ backgroundColor: "#f2f2f7", minHeight: "500px", maxHeight: "680px", overflowY: "auto" }}>
           <div className="mb-4 text-center text-xs" style={{ color: MUTED }}>
             The Paper Route · {new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })}
           </div>

@@ -73,6 +73,7 @@ export interface GeneratedItem {
   source?: string;
   url?: string;
   timestamp?: string;
+  group?: string; // league / category label — used to render sub-headers in multi-source sections
 }
 
 // One rendered section in a generated digest
