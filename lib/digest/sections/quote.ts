@@ -19,33 +19,56 @@ function scoreQuote(text: string, tone: string): number {
   return keywords.reduce((score, kw) => score + (lower.includes(kw) ? 1 : 0), 0);
 }
 
-export async function fetchQuoteData(tone = "any"): Promise<QuoteData> {
-  // Fetch 5 quotes in parallel and pick the best match for the requested tone
-  const fetches = Array.from({ length: 5 }, () =>
-    fetch("https://zenquotes.io/api/random")
-      .then((r) => r.ok ? r.json() as Promise<Array<{ q: string; a: string }>> : Promise.resolve([]))
-      .catch(() => [] as Array<{ q: string; a: string }>)
-  );
+const FALLBACK_QUOTES: Array<{ q: string; a: string; tones: string[] }> = [
+  { q: "The secret of getting ahead is getting started.", a: "Mark Twain", tones: ["motivational"] },
+  { q: "It does not matter how slowly you go as long as you do not stop.", a: "Confucius", tones: ["motivational"] },
+  { q: "Life is what happens when you're busy making other plans.", a: "John Lennon", tones: ["philosophical"] },
+  { q: "The only way to do great work is to love what you do.", a: "Steve Jobs", tones: ["motivational"] },
+  { q: "In the middle of every difficulty lies opportunity.", a: "Albert Einstein", tones: ["motivational", "philosophical"] },
+  { q: "It always seems impossible until it's done.", a: "Nelson Mandela", tones: ["motivational", "historical"] },
+  { q: "Ask not what your country can do for you — ask what you can do for your country.", a: "John F. Kennedy", tones: ["historical"] },
+  { q: "I have not failed. I've just found 10,000 ways that won't work.", a: "Thomas Edison", tones: ["motivational", "funny"] },
+  { q: "Be the change you wish to see in the world.", a: "Mahatma Gandhi", tones: ["philosophical", "historical"] },
+  { q: "The unexamined life is not worth living.", a: "Socrates", tones: ["philosophical"] },
+  { q: "Two things are infinite: the universe and human stupidity; and I'm not sure about the universe.", a: "Albert Einstein", tones: ["funny", "philosophical"] },
+  { q: "Well-behaved women seldom make history.", a: "Laurel Thatcher Ulrich", tones: ["historical", "motivational"] },
+];
 
-  const results = await Promise.all(fetches);
-  const candidates = results
-    .map((data) => data[0])
-    .filter((item): item is { q: string; a: string } => !!item?.q && !!item?.a);
+function pickFallback(tone: string): QuoteData {
+  const pool = tone === "any"
+    ? FALLBACK_QUOTES
+    : FALLBACK_QUOTES.filter((q) => q.tones.includes(tone));
+  const source = pool.length > 0 ? pool : FALLBACK_QUOTES;
+  const pick = source[Math.floor(Math.random() * source.length)];
+  return { quote: pick.q, author: pick.a, tone };
+}
 
-  if (candidates.length === 0) throw new Error("ZenQuotes returned no results");
-
-  let chosen = candidates[0];
-
-  if (tone !== "any") {
-    let best = -1;
-    for (const candidate of candidates) {
-      const score = scoreQuote(candidate.q, tone);
-      if (score > best) {
-        best = score;
-        chosen = candidate;
-      }
-    }
+async function fetchWithTimeout(url: string, ms: number): Promise<Response> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), ms);
+  try {
+    return await fetch(url, { signal: controller.signal });
+  } finally {
+    clearTimeout(timer);
   }
+}
 
-  return { quote: chosen.q, author: chosen.a, tone };
+export async function fetchQuoteData(tone = "any"): Promise<QuoteData> {
+  try {
+    const r = await fetchWithTimeout("https://zenquotes.io/api/random", 4000);
+    if (!r.ok) return pickFallback(tone);
+
+    const data = (await r.json()) as Array<{ q: string; a: string }>;
+    const item = data[0];
+    if (!item?.q || !item?.a) return pickFallback(tone);
+
+    if (tone === "any") return { quote: item.q, author: item.a, tone };
+
+    // If tone-matching is requested, score the single result; fall back to
+    // the hardcoded pool if it scores 0 (no relevant keywords).
+    if (scoreQuote(item.q, tone) > 0) return { quote: item.q, author: item.a, tone };
+    return pickFallback(tone);
+  } catch {
+    return pickFallback(tone);
+  }
 }

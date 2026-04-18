@@ -137,23 +137,13 @@ async function buildWeatherSection(section: DigestSection): Promise<GeneratedSec
 
 async function buildQuoteSection(section: DigestSection): Promise<GeneratedSection> {
   const tone = (section.config?.tone as string | undefined) ?? "any";
-  try {
-    const data = await fetchQuoteData(tone);
-    return {
-      sectionId: section.id,
-      title: section.title,
-      emoji: "💬",
-      items: [{ text: `"${data.quote}" — ${data.author}`, source: "ZenQuotes" }],
-    };
-  } catch (err) {
-    console.error("[digest/generate] Quote fetch failed:", err);
-    return {
-      sectionId: section.id,
-      title: section.title,
-      emoji: "💬",
-      items: [{ text: "Quote unavailable today — check back tomorrow" }],
-    };
-  }
+  const data = await fetchQuoteData(tone);
+  return {
+    sectionId: section.id,
+    title: section.title,
+    emoji: "💬",
+    items: [{ text: `"${data.quote}" — ${data.author}` }],
+  };
 }
 
 // ── Main pipeline ─────────────────────────────────────────────────────────────
@@ -260,13 +250,12 @@ export function digestToHTML(digest: GeneratedDigest, userName: string): string 
             ? `<a href="${item.url}" target="_blank" rel="noopener noreferrer" style="color:#1a1a1a;text-decoration:none;">${item.text}<span style="margin-left:4px;color:#bbb;font-size:11px;">↗</span></a>`
             : `<span style="color:#1a1a1a;">${item.text}</span>`;
           const bullet = `
-          <div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:12px;">
-            <div style="margin-top:6px;width:6px;height:6px;min-width:6px;border-radius:50%;background:#1a1a1a;flex-shrink:0;"></div>
-            <div style="min-width:0;flex:1;">
-              <p style="margin:0;font-size:14px;line-height:1.6;">${headline}</p>
-              ${item.source ? `<p style="margin:4px 0 0;font-size:11px;color:#888;">${item.source}</p>` : ""}
-            </div>
-          </div>`;
+          <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:8px;">
+            <tr>
+              <td width="14" style="vertical-align:top;padding-right:6px;font-size:14px;line-height:1.6;color:#1a1a1a;">&#8226;</td>
+              <td style="font-size:14px;line-height:1.6;color:#1a1a1a;">${headline}${item.source ? `<br><span style="font-size:11px;color:#888;">${item.source}</span>` : ""}</td>
+            </tr>
+          </table>`;
           return groupHeader + bullet;
         })
         .join("\n");

@@ -146,6 +146,7 @@ export default function DashboardPage() {
   const { user, subscription, isOnboarded, updateSubscription, reset } = useAppStore();
   const [editingSection, setEditingSection] = useState<DigestSection | null>(null);
   const [showDeliveryEdit, setShowDeliveryEdit] = useState(false);
+  const [sending, setSending] = useState(false);
   const [deliveryTime, setDeliveryTime] = useState("");
   const [deliveryTz, setDeliveryTz] = useState("");
   const [dragIdx, setDragIdx] = useState<number | null>(null);
@@ -222,8 +223,40 @@ export default function DashboardPage() {
     toast.success("Delivery settings saved");
   };
 
-  const sendTestDigest = () => {
-    toast.success("Test digest sent! Check your inbox.");
+  const sendTestDigest = async () => {
+    console.log("[Send test] clicked", { userEmail: user.email, deliveryEmail: delivery.email });
+    const toEmail = user.email || delivery.email;
+    if (!toEmail) {
+      toast.error("No email address on your account.");
+      return;
+    }
+    const enabledSections = sections.filter((s) => s.enabled);
+    if (!enabledSections.length) {
+      toast.error("Enable at least one section first.");
+      return;
+    }
+    setSending(true);
+    try {
+      const res = await fetch("/api/email/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: toEmail,
+          userName: user.name,
+          sections: enabledSections,
+          deliverySettings: delivery,
+        }),
+      });
+      if (!res.ok) {
+        const { error } = await res.json();
+        throw new Error(error ?? "Unknown error");
+      }
+      toast.success(`Digest sent to ${toEmail}!`);
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Failed to send. Try again.");
+    } finally {
+      setSending(false);
+    }
   };
 
   return (
@@ -246,10 +279,12 @@ export default function DashboardPage() {
           <div className="flex items-center gap-2">
             <button
               onClick={sendTestDigest}
-              className="flex items-center gap-1.5 rounded px-3 py-2 text-xs font-medium transition-opacity hover:opacity-70"
+              disabled={sending}
+              className="flex items-center gap-1.5 rounded px-3 py-2 text-xs font-medium transition-opacity hover:opacity-70 disabled:opacity-50 disabled:cursor-not-allowed"
               style={{ backgroundColor: CARD, border: `1px solid ${BORDER}`, color: DARK }}
             >
-              <Zap className="h-3.5 w-3.5" /> Send test
+              <Zap className="h-3.5 w-3.5" />
+              {sending ? "Sending…" : "Send test"}
             </button>
             <Link
               href="/preview"

@@ -23,7 +23,7 @@ function buildHtml(digest: GeneratedDigest, userName: string): string {
         ${section.items
           .map(
             (item) =>
-              `<li style="margin-bottom:6px;">${item.text}${
+              `<li style="margin-bottom:6px;padding-left:4px;">${item.text}${
                 item.source
                   ? ` <span style="font-size:12px;color:#9ca3af;">— ${item.source}</span>`
                   : ""
