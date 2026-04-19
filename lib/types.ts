@@ -72,6 +72,7 @@ export interface GeneratedItem {
   text: string;
   source?: string;
   url?: string;
+  linkText?: string; // if set, url renders as a standalone link after the text instead of wrapping it
   timestamp?: string;
   group?: string; // league / category label — used to render sub-headers in multi-source sections
 }

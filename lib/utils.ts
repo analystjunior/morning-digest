@@ -12,7 +12,7 @@ export const DEFAULT_CONFIG: Partial<Record<SectionType, Record<string, unknown>
   news:    { categories: ["general"] },
   finance: { tickers: [] },
   crypto:  { coins: [] },
-  quote:   { tone: "any" },
+  quote:   {},
   custom:  {},
 };
 

@@ -1,3 +1,143 @@
+// ── Favorite team game results ────────────────────────────────────────────────
+
+export interface TeamGame {
+  teamName: string;
+  recent: {
+    opponent: string;
+    homeAway: "home" | "away";
+    teamScore: number;
+    opponentScore: number;
+    result: "W" | "L" | "T";
+    url?: string;
+  } | null;
+  upcoming: {
+    opponent: string;
+    homeAway: "home" | "away";
+    isoDate: string;
+    url?: string;
+    broadcasts?: string;
+  } | null;
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type EspnEvent = any;
+
+// Score is a string for NFL/NBA/MLB/NHL and an object {displayValue, value} for soccer
+function parseScore(raw: unknown): number {
+  if (raw === null || raw === undefined) return 0;
+  if (typeof raw === "string") return parseInt(raw, 10) || 0;
+  if (typeof raw === "object") {
+    const obj = raw as Record<string, unknown>;
+    if (typeof obj.displayValue === "string") return parseInt(obj.displayValue, 10) || 0;
+    if (typeof obj.value === "number") return Math.round(obj.value);
+  }
+  return 0;
+}
+
+function parseTeamGame(events: EspnEvent[], teamId: string, teamName: string): TeamGame {
+  const now = Date.now();
+  const window24h = now - 24 * 60 * 60 * 1000;
+  const window48h = now + 48 * 60 * 60 * 1000;
+
+  let recent: TeamGame["recent"] = null;
+  let upcoming: TeamGame["upcoming"] = null;
+
+  for (const event of events) {
+    const eventMs = new Date(event.date as string).getTime();
+    const competition = event.competitions?.[0];
+    if (!competition) continue;
+
+    const competitors: EspnEvent[] = competition.competitors ?? [];
+    const teamComp = competitors.find((c: EspnEvent) => String(c.team?.id) === String(teamId));
+    const oppComp  = competitors.find((c: EspnEvent) => String(c.team?.id) !== String(teamId));
+    if (!teamComp || !oppComp) continue;
+
+    const summaryLink: string | undefined = (event.links ?? []).find(
+      (l: EspnEvent) => Array.isArray(l.rel) && l.rel.includes("summary")
+    )?.href;
+
+    // Determine past vs. future: use status when present; fall back to date comparison.
+    // (Soccer returns status: null so we rely on date.)
+    const state: string = event.status?.type?.state ?? (eventMs < now ? "post" : "pre");
+    const completed: boolean = event.status?.type?.completed ?? (eventMs < now);
+
+    if (state === "post" && completed && eventMs >= window24h && !recent) {
+      recent = {
+        opponent: oppComp.team?.displayName ?? "Unknown",
+        homeAway: teamComp.homeAway === "home" ? "home" : "away",
+        teamScore: parseScore(teamComp.score),
+        opponentScore: parseScore(oppComp.score),
+        result: teamComp.winner ? "W" : oppComp.winner ? "L" : "T",
+        url: summaryLink,
+      };
+    }
+
+    if (state === "pre" && eventMs >= now && eventMs <= window48h && !upcoming) {
+      const broadcastNames: string[] = (competition.broadcasts ?? [])
+        .map((b: EspnEvent) => b?.media?.shortName as string | undefined)
+        .filter((n: string | undefined): n is string => !!n);
+      upcoming = {
+        opponent: oppComp.team?.displayName ?? "Unknown",
+        homeAway: teamComp.homeAway === "home" ? "home" : "away",
+        isoDate: event.date as string,
+        url: summaryLink,
+        broadcasts: broadcastNames.length > 0 ? broadcastNames.join(" / ") : undefined,
+      };
+    }
+
+    if (recent && upcoming) break;
+  }
+
+  return { teamName, recent, upcoming };
+}
+
+export async function fetchTeamGames(
+  sport: string,
+  league: string,
+  espnId: string,
+  teamName: string
+): Promise<TeamGame> {
+  try {
+    const url = `https://site.api.espn.com/apis/site/v2/sports/${sport}/${league}/teams/${espnId}/schedule`;
+    const res = await fetch(url, { next: { revalidate: 300 } });
+    if (!res.ok) return { teamName, recent: null, upcoming: null };
+    const data = await res.json() as { events?: EspnEvent[] };
+    return parseTeamGame(data.events ?? [], espnId, teamName);
+  } catch {
+    return { teamName, recent: null, upcoming: null };
+  }
+}
+
+export function formatTeamGameItems(game: TeamGame): string[] {
+  const lines: string[] = [];
+
+  if (game.recent) {
+    const g = game.recent;
+    const vs = g.homeAway === "home" ? `vs. ${g.opponent}` : `@ ${g.opponent}`;
+    lines.push(`${g.result} ${g.teamScore}–${g.opponentScore} ${vs}`);
+  }
+
+  if (game.upcoming) {
+    const g = game.upcoming;
+    const vs = g.homeAway === "home" ? `vs. ${g.opponent}` : `@ ${g.opponent}`;
+    const dt = new Date(g.isoDate);
+    const label = dt.toLocaleString("en-US", {
+      timeZone: "America/New_York",
+      weekday: "short",
+      month: "short",
+      day: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+    });
+    const bcast = g.broadcasts ? ` · ${g.broadcasts}` : "";
+    lines.push(`Next: ${vs} · ${label} ET${bcast}`);
+  }
+
+  return lines;
+}
+
+// ── Headlines ─────────────────────────────────────────────────────────────────
+
 export interface HeadlineItem {
   title: string;
   link?: string;

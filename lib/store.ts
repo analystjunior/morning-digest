@@ -35,7 +35,7 @@ function getDefaultOnboarding(): OnboardingState {
       { id: generateId(), title: "Sports News",       type: "sports", config: { leagues: [] },                               order: 2, enabled: true, mode: "brief" },
       { id: generateId(), title: "Market Snapshot",   type: "finance",config: { tickers: [] },                                          order: 3, enabled: true, mode: "brief" },
       { id: generateId(), title: "Crypto Prices",     type: "crypto", config: { coins: ["bitcoin", "ethereum", "solana"] },               order: 4, enabled: true, mode: "brief" },
-      { id: generateId(), title: "Quote of the Day",  type: "quote",  config: { tone: "any" },                                            order: 5, enabled: true, mode: "brief" },
+      { id: generateId(), title: "Quote of the Day",  type: "quote",  config: {},                                                          order: 5, enabled: true, mode: "brief" },
     ],
     delivery: {
       time: "07:00",

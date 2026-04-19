@@ -220,8 +220,17 @@ export default function DashboardPage() {
   };
 
   const updateSection = (updated: DigestSection) => {
-    updateSubscription({ sections: sections.map((s) => (s.id === updated.id ? updated : s)) });
+    const newSections = sections.map((s) => (s.id === updated.id ? updated : s));
+    updateSubscription({ sections: newSections });
     toast.success("Section updated");
+    fetch("/api/user/save", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        user: { name: user.name },
+        subscription: { sections: newSections, delivery },
+      }),
+    }).catch(() => {});
   };
 
   const removeSection = (id: string) => {

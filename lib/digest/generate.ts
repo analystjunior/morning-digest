@@ -10,7 +10,8 @@ import type { DigestSection, GeneratedDigest, GeneratedSection, GeneratedItem } 
 import { generateId } from "@/lib/utils";
 import { fetchStocksData } from "./sections/stocks";
 import { fetchCryptoData } from "./sections/crypto";
-import { fetchSportsHeadlines } from "./sections/sports";
+import { fetchSportsHeadlines, fetchTeamGames, formatTeamGameItems } from "./sections/sports";
+import type { EspnTeam } from "@/lib/sports-teams";
 import { fetchWeatherData } from "./sections/weather";
 import { fetchQuoteData } from "./sections/quote";
 import { fetchNewsHeadlines } from "./sections/news";
@@ -43,14 +44,48 @@ async function buildNewsSection(section: DigestSection): Promise<GeneratedSectio
 async function buildSportsSection(section: DigestSection): Promise<GeneratedSection> {
   const limit = (section.config?.limit as number | undefined) ?? (section.mode === "brief" ? 3 : 8);
   const leagues = (section.config?.leagues as string[] | undefined) ?? [];
-  const headlines = await fetchSportsHeadlines(limit, leagues);
+  const favoriteTeams = (section.config?.favoriteTeams as EspnTeam[] | undefined) ?? [];
 
-  const items: GeneratedItem[] = headlines.map((h) => ({
-    text: h.title,
-    source: "ESPN",
-    url: h.link,
-    group: leagues.length > 1 ? h.league : undefined,
-  }));
+  const [headlines, teamGames] = await Promise.all([
+    fetchSportsHeadlines(limit, leagues),
+    Promise.all(
+      favoriteTeams.map((t) => fetchTeamGames(t.sport, t.league, t.espnId, t.name))
+    ),
+  ]);
+
+  const items: GeneratedItem[] = [];
+
+  // Favorite team results first, one group per team, silently skipped if nothing in window
+  for (const game of teamGames) {
+    const lines = formatTeamGameItems(game);
+    if (lines.length === 0) continue;
+    lines.forEach((line, i) => {
+      const isRecent = i === 0 && !line.startsWith("Next:");
+      const isUpcoming = line.startsWith("Next:");
+      const url = isRecent && game.recent?.url
+        ? game.recent.url
+        : isUpcoming && game.upcoming?.url
+        ? game.upcoming.url
+        : undefined;
+      items.push({
+        text: line,
+        source: "ESPN",
+        url,
+        linkText: isRecent && url ? "Box score ↗" : isUpcoming && url ? "ESPN ↗" : undefined,
+        group: game.teamName,
+      });
+    });
+  }
+
+  // Headlines below
+  for (const h of headlines) {
+    items.push({
+      text: h.title,
+      source: "ESPN",
+      url: h.link,
+      group: favoriteTeams.length > 0 ? (leagues.length > 1 ? h.league : "Headlines") : (leagues.length > 1 ? h.league : undefined),
+    });
+  }
 
   return {
     sectionId: section.id,
@@ -136,8 +171,7 @@ async function buildWeatherSection(section: DigestSection): Promise<GeneratedSec
 // ── Quote ─────────────────────────────────────────────────────────────────────
 
 async function buildQuoteSection(section: DigestSection): Promise<GeneratedSection> {
-  const tone = (section.config?.tone as string | undefined) ?? "any";
-  const data = await fetchQuoteData(tone);
+  const data = await fetchQuoteData();
   return {
     sectionId: section.id,
     title: section.title,
@@ -246,7 +280,9 @@ export function digestToHTML(digest: GeneratedDigest, userName: string): string 
             currentGroup = item.group;
             groupHeader = `<div style="margin:${isFirst ? "0" : "12px"} 0 8px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#111;">${item.group}</div>`;
           }
-          const headline = item.url
+          const headline = item.url && item.linkText
+            ? `<span style="color:#1a1a1a;">${item.text}</span> <a href="${item.url}" target="_blank" rel="noopener noreferrer" style="color:#888;font-size:11px;text-decoration:none;">${item.linkText}</a>`
+            : item.url
             ? `<a href="${item.url}" target="_blank" rel="noopener noreferrer" style="color:#1a1a1a;text-decoration:none;">${item.text}<span style="margin-left:4px;color:#bbb;font-size:11px;">↗</span></a>`
             : `<span style="color:#1a1a1a;">${item.text}</span>`;
           const bullet = `
