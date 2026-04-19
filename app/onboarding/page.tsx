@@ -16,6 +16,7 @@ import {
 } from "@/lib/utils";
 import { SectionConfig } from "@/components/ui/SectionConfig";
 import Toggle from "@/components/ui/Toggle";
+import { createClient } from "@/lib/supabase/client";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -287,9 +288,34 @@ function OnboardingContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const templateId = searchParams.get("template");
+  const authError = searchParams.get("error");
 
   const { onboarding, updateOnboarding, setOnboardingStep, completeOnboarding } = useAppStore();
   const { step, name, sections, delivery } = onboarding;
+
+  // On mount: if the user has already verified their magic link and we have a
+  // session, skip the welcome/verify steps and jump to topic selection.
+  // If they have an existing digest profile, they're a returning user — send
+  // them straight to the dashboard.
+  useEffect(() => {
+    const checkSession = async () => {
+      const supabase = createClient();
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      const { data: profile } = await supabase
+        .from("digest_profiles")
+        .select("id")
+        .maybeSingle();
+
+      if (profile) {
+        router.replace("/dashboard");
+      } else if (step === "welcome") {
+        setOnboardingStep("topics");
+      }
+    };
+    checkSession();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Legacy template deep-link support (keeps existing URLs working)
   useEffect(() => {
@@ -303,21 +329,42 @@ function OnboardingContent() {
   const [emailInput, setEmailInput] = useState(delivery.email || "");
   const [phoneInput, setPhoneInput] = useState(delivery.phone || "");
   const [channels, setChannels] = useState<DeliveryChannel[]>(delivery.channels || ["email"]);
+  const [otpSent, setOtpSent] = useState(false);
+  const [sendingOtp, setSendingOtp] = useState(false);
 
   const toggleChannel = (ch: DeliveryChannel) =>
     setChannels((prev) => prev.includes(ch) ? prev.filter((c) => c !== ch) : [...prev, ch]);
 
-  const handleWelcomeNext = () => {
+  const handleWelcomeNext = async () => {
     if (!nameInput.trim()) { toast.error("Please enter your name"); return; }
-    if (channels.includes("email") && emailInput && !isValidEmail(emailInput)) {
+    if (!emailInput || !isValidEmail(emailInput)) {
       toast.error("Please enter a valid email address"); return;
     }
     if (channels.includes("sms") && phoneInput && !isValidPhone(phoneInput)) {
       toast.error("Please enter a valid phone number"); return;
     }
     if (channels.length === 0) { toast.error("Please select at least one delivery channel"); return; }
+
+    // Commit to store first so the data survives the magic-link redirect.
     updateOnboarding({ name: nameInput.trim(), delivery: { ...delivery, email: emailInput, phone: phoneInput, channels } });
-    setOnboardingStep("topics");
+
+    setSendingOtp(true);
+    try {
+      const supabase = createClient();
+      const { error } = await supabase.auth.signInWithOtp({
+        email: emailInput,
+        options: {
+          emailRedirectTo: `${window.location.origin}/auth/confirm`,
+          data: { full_name: nameInput.trim() },
+        },
+      });
+      if (error) throw error;
+      setOtpSent(true);
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Failed to send magic link. Try again.");
+    } finally {
+      setSendingOtp(false);
+    }
   };
 
   // ── Topics ─────────────────────────────────────────────────────────────────
@@ -374,10 +421,38 @@ function OnboardingContent() {
   };
 
   // ── Review → Submit ────────────────────────────────────────────────────────
-  const handleSubmit = () => {
-    completeOnboarding();
-    toast.success("Your digest is live!");
-    router.push("/dashboard");
+  const [submitting, setSubmitting] = useState(false);
+
+  const handleSubmit = async () => {
+    setSubmitting(true);
+    try {
+      const res = await fetch("/api/user/save", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          user: { name: onboarding.name, email: onboarding.delivery.email, timezone: onboarding.delivery.timezone },
+          subscription: {
+            name: "My Morning Digest",
+            sections: onboarding.sections,
+            delivery: onboarding.delivery,
+            status: "active",
+          },
+        }),
+      });
+
+      if (!res.ok) {
+        const { error } = await res.json();
+        throw new Error(error ?? "Failed to save preferences");
+      }
+
+      completeOnboarding();
+      toast.success("Your digest is live!");
+      router.push("/dashboard");
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Something went wrong. Try again.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -402,8 +477,17 @@ function OnboardingContent() {
       <div className="mx-auto max-w-2xl px-4 py-10 sm:px-6">
 
         {/* ── STEP: Welcome ── */}
-        {step === "welcome" && (
+        {step === "welcome" && !otpSent && (
           <div className="animate-in space-y-6">
+            {authError && (
+              <div
+                className="rounded-lg px-4 py-3 text-sm"
+                style={{ backgroundColor: "#fef2f2", border: "1px solid #fecaca", color: "#991b1b" }}
+              >
+                The magic link expired or was invalid. Enter your email below to get a new one.
+              </div>
+            )}
+
             <div>
               <h1
                 className="mb-2 text-2xl font-bold"
@@ -426,6 +510,22 @@ function OnboardingContent() {
                 onChange={(e) => setNameInput(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleWelcomeNext()}
               />
+            </div>
+
+            <div>
+              <label style={labelStyle}>Email address *</label>
+              <input
+                style={inputStyle}
+                className="rounded"
+                type="email"
+                placeholder="you@example.com"
+                value={emailInput}
+                onChange={(e) => setEmailInput(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleWelcomeNext()}
+              />
+              <p className="mt-1.5 text-[11px]" style={{ color: "#bbb" }}>
+                We&apos;ll send a magic link to verify your email — no password needed.
+              </p>
             </div>
 
             <div>
@@ -470,20 +570,6 @@ function OnboardingContent() {
               </div>
             </div>
 
-            {channels.includes("email") && (
-              <div>
-                <label style={labelStyle}>Email address</label>
-                <input
-                  style={inputStyle}
-                  className="rounded"
-                  type="email"
-                  placeholder="you@example.com"
-                  value={emailInput}
-                  onChange={(e) => setEmailInput(e.target.value)}
-                />
-              </div>
-            )}
-
             {channels.includes("sms") && (
               <div>
                 <label style={labelStyle}>Phone number</label>
@@ -499,8 +585,48 @@ function OnboardingContent() {
               </div>
             )}
 
-            <button onClick={handleWelcomeNext} style={btnPrimary} className="transition-opacity hover:opacity-80">
-              Continue <ArrowRight className="h-4 w-4" />
+            <button
+              onClick={handleWelcomeNext}
+              disabled={sendingOtp}
+              style={btnPrimary}
+              className="transition-opacity hover:opacity-80 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {sendingOtp ? "Sending link…" : "Continue"} <ArrowRight className="h-4 w-4" />
+            </button>
+          </div>
+        )}
+
+        {/* ── STEP: Magic link sent ── */}
+        {step === "welcome" && otpSent && (
+          <div className="animate-in space-y-6">
+            <div
+              className="flex h-14 w-14 items-center justify-center rounded-full"
+              style={{ backgroundColor: DARK }}
+            >
+              <Mail className="h-6 w-6" style={{ color: BG }} />
+            </div>
+            <div>
+              <h1
+                className="mb-2 text-2xl font-bold"
+                style={{ fontFamily: "var(--font-playfair), serif", color: DARK }}
+              >
+                Check your inbox
+              </h1>
+              <p className="text-sm" style={{ color: "#555" }}>
+                We sent a magic link to{" "}
+                <span className="font-medium" style={{ color: DARK }}>{emailInput}</span>.
+                Click it to verify your email and continue building your digest.
+              </p>
+            </div>
+            <p className="text-xs" style={{ color: "#bbb" }}>
+              The link expires in 1 hour. If you don&apos;t see it, check your spam folder.
+            </p>
+            <button
+              onClick={() => setOtpSent(false)}
+              className="text-sm transition-opacity hover:opacity-60"
+              style={{ color: SECONDARY }}
+            >
+              ← Use a different email
             </button>
           </div>
         )}
@@ -763,10 +889,11 @@ function OnboardingContent() {
 
             <button
               onClick={handleSubmit}
+              disabled={submitting}
               style={btnPrimary}
-              className="transition-opacity hover:opacity-80"
+              className="transition-opacity hover:opacity-80 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Launch my digest
+              {submitting ? "Saving…" : "Launch my digest"}
             </button>
             <p className="text-center text-xs" style={{ color: "#bbb" }}>
               You can edit everything at any time from your dashboard

@@ -71,7 +71,7 @@ export interface Database {
           id: string;
           digest_profile_id: string;
           user_id: string;
-          section_type: "weather" | "news" | "calendar" | "tasks" | "stocks" | "quote" | "sports" | "custom";
+          section_type: "weather" | "news" | "calendar" | "tasks" | "stocks" | "quote" | "sports" | "custom" | "crypto";
           title: string | null;
           position: number;
           is_enabled: boolean;
@@ -83,7 +83,7 @@ export interface Database {
           id?: string;
           digest_profile_id: string;
           user_id: string;
-          section_type: "weather" | "news" | "calendar" | "tasks" | "stocks" | "quote" | "sports" | "custom";
+          section_type: "weather" | "news" | "calendar" | "tasks" | "stocks" | "quote" | "sports" | "custom" | "crypto";
           title?: string | null;
           position?: number;
           is_enabled?: boolean;
@@ -182,7 +182,7 @@ export interface Database {
     Views: Record<string, never>;
     Functions: Record<string, never>;
     Enums: {
-      section_type: "weather" | "news" | "calendar" | "tasks" | "stocks" | "quote" | "sports" | "custom";
+      section_type: "weather" | "news" | "calendar" | "tasks" | "stocks" | "quote" | "sports" | "custom" | "crypto";
       delivery_channel: "email" | "web_only";
       digest_status: "pending" | "generating" | "ready" | "delivered" | "failed";
       digest_tone: "concise" | "detailed" | "casual" | "formal";

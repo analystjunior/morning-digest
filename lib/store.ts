@@ -20,6 +20,7 @@ interface AppStore {
   setOnboardingStep: (step: OnboardingStep) => void;
   updateOnboarding: (partial: Partial<OnboardingState>) => void;
   completeOnboarding: () => void;
+  restoreFromDB: (user: User, subscription: DigestSubscription) => void;
   loadDemoData: () => void;
   reset: () => void;
 }
@@ -99,6 +100,9 @@ export const useAppStore = create<AppStore>()(
 
         set({ user, subscription, isOnboarded: true, onboarding: getDefaultOnboarding() });
       },
+
+      restoreFromDB: (user: User, subscription: DigestSubscription) =>
+        set({ user, subscription, isOnboarded: true }),
 
       loadDemoData: () => {
         set({

@@ -16,6 +16,8 @@ import {
 import Toggle from "@/components/ui/Toggle";
 import NavBar from "@/components/ui/NavBar";
 import { SectionConfig } from "@/components/ui/SectionConfig";
+import { createClient } from "@/lib/supabase/client";
+import { loadUserData } from "@/lib/supabase/user-data";
 
 const ALLOWED_SECTION_TYPES: SectionType[] = [
   "weather", "news", "sports", "finance", "crypto", "quote",
@@ -143,7 +145,7 @@ function SectionEditor({
 // ─── Main Dashboard ───────────────────────────────────────────────────────────
 export default function DashboardPage() {
   const router = useRouter();
-  const { user, subscription, isOnboarded, updateSubscription, reset } = useAppStore();
+  const { user, subscription, isOnboarded, updateSubscription, restoreFromDB, reset } = useAppStore();
   const [editingSection, setEditingSection] = useState<DigestSection | null>(null);
   const [showDeliveryEdit, setShowDeliveryEdit] = useState(false);
   const [sending, setSending] = useState(false);
@@ -151,10 +153,37 @@ export default function DashboardPage() {
   const [deliveryTz, setDeliveryTz] = useState("");
   const [dragIdx, setDragIdx] = useState<number | null>(null);
   const [dragOverIdx, setDragOverIdx] = useState<number | null>(null);
+  const [loading, setLoading] = useState(true);
 
+  // Verify auth session on mount. If the store is already hydrated (e.g. same
+  // browser session), skip the DB fetch. If not, load from Supabase so returning
+  // users see their saved configuration instead of a blank slate.
   useEffect(() => {
-    if (!isOnboarded) router.replace("/onboarding");
-  }, [isOnboarded]);
+    const restore = async () => {
+      const supabase = createClient();
+      const { data: { session } } = await supabase.auth.getSession();
+
+      if (!session) {
+        router.replace("/onboarding");
+        return;
+      }
+
+      if (!isOnboarded) {
+        const data = await loadUserData(supabase);
+        if (data) {
+          restoreFromDB(data.user, data.subscription);
+        } else {
+          // Authenticated but hasn't completed onboarding yet.
+          router.replace("/onboarding");
+          return;
+        }
+      }
+
+      setLoading(false);
+    };
+
+    restore();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (subscription) {
@@ -163,7 +192,16 @@ export default function DashboardPage() {
     }
   }, [subscription]);
 
-  if (!subscription || !user) return null;
+  if (loading || !subscription || !user) {
+    return (
+      <div
+        className="flex min-h-screen items-center justify-center"
+        style={{ backgroundColor: "#E8E6DF" }}
+      >
+        <p className="text-sm" style={{ color: "#888" }}>Loading your digest…</p>
+      </div>
+    );
+  }
 
   const { sections, delivery, status, name: digestName } = subscription;
 
@@ -544,8 +582,10 @@ export default function DashboardPage() {
               style={{ backgroundColor: CARD, border: `1px solid ${BORDER}` }}
             >
               <button
-                onClick={() => {
+                onClick={async () => {
                   if (confirm("Reset your account? This cannot be undone.")) {
+                    const supabase = createClient();
+                    await supabase.auth.signOut();
                     reset();
                     router.push("/");
                   }
