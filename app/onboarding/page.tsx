@@ -311,6 +311,15 @@ function OnboardingContent() {
       if (profile) {
         router.replace("/dashboard");
       } else if (step === "welcome") {
+        // After the magic-link redirect the page reloads and Zustand loses the
+        // in-memory onboarding state (it's not persisted to localStorage).
+        // Restore name + email from the session so the review step has them.
+        const fullName = (session.user.user_metadata?.full_name as string | undefined) ?? "";
+        const email = session.user.email ?? "";
+        updateOnboarding({
+          name: fullName,
+          delivery: { ...delivery, email: email || delivery.email },
+        });
         setOnboardingStep("topics");
       }
     };
@@ -327,6 +336,10 @@ function OnboardingContent() {
   // ── Welcome ────────────────────────────────────────────────────────────────
   const [nameInput, setNameInput] = useState(name || "");
   const [emailInput, setEmailInput] = useState(delivery.email || "");
+
+  // Keep local inputs in sync if the store updates after the session check.
+  useEffect(() => { if (name) setNameInput(name); }, [name]);
+  useEffect(() => { if (delivery.email) setEmailInput(delivery.email); }, [delivery.email]);
   const [phoneInput, setPhoneInput] = useState(delivery.phone || "");
   const [channels, setChannels] = useState<DeliveryChannel[]>(delivery.channels || ["email"]);
   const [otpSent, setOtpSent] = useState(false);
